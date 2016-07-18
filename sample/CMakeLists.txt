@@ -1,0 +1,32 @@
+﻿
+
+EchoWithColor(COLOR GREEN "-- Configure ${CMAKE_CURRENT_LIST_DIR}")
+
+# ============ sample - [...] ============
+
+file(GLOB SAMPLE_SRC_LIST RELATIVE "${PROJECT_SAMPLE_SRC_DIR}"
+    ${PROJECT_SAMPLE_SRC_DIR}/*.cpp
+    ${PROJECT_SAMPLE_SRC_DIR}/*.cc
+    ${PROJECT_SAMPLE_SRC_DIR}/*.c
+    ${PROJECT_SAMPLE_SRC_DIR}/*.cxx
+)
+
+set(EXECUTABLE_OUTPUT_PATH "${PROJECT_BINARY_DIR}/sample")
+
+if (MINGW)
+    list(APPEND EXTENTION_LINK_LIB stdc++)
+endif()
+
+foreach(SAMPLE_SRC_FILE IN LISTS SAMPLE_SRC_LIST)
+    get_filename_component(SAMPLE_SRC_BIN_NAME "${SAMPLE_SRC_FILE}" NAME_WE)
+
+    add_executable("${SAMPLE_SRC_BIN_NAME}" ${SAMPLE_SRC_FILE} ${PROJECT_3RD_PARTY_SRC_LIST})
+    target_link_libraries("${SAMPLE_SRC_BIN_NAME}"
+	    ${PROJECT_LIB_LINK}
+        atapp
+        ${3RD_PARTY_LIBATBUS_LINK_NAME}
+        ${3RD_PARTY_ATFRAME_UTILS_LINK_NAME}
+		${3RD_PARTY_LIBUV_LINK_NAME}
+        ${EXTENTION_LINK_LIB}
+    )
+endforeach()
