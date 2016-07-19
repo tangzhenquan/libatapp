@@ -385,11 +385,6 @@ namespace atapp {
             cfg_loader_.dump_to("atapp.bus.options.global_router", optv);
             conf_.bus_conf.flags.set(atbus::node::conf_flag_t::EN_CONF_GLOBAL_ROUTER, optv);
         }
-        {
-            bool optv = false;
-            cfg_loader_.dump_to("atapp.bus.options.no_connect_reg", optv);
-            conf_.bus_conf.flags.set(atbus::node::conf_flag_t::EN_CONF_NO_CONNECT_REG, optv);
-        }
 
         cfg_loader_.dump_to("atapp.bus.proxy", conf_.bus_conf.father_address);
         cfg_loader_.dump_to("atapp.bus.loop_times", conf_.bus_conf.loop_times);
