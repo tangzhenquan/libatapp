@@ -74,6 +74,7 @@ namespace atapp {
         typedef std::function<int(app &, app_id_t src_pd, app_id_t dst_pd, const atbus::protocol::msg &m)> callback_fn_on_send_fail_t;
         typedef std::function<int(app &, atbus::endpoint &, int)> callback_fn_on_connected_t;
         typedef std::function<int(app &, atbus::endpoint &, int)> callback_fn_on_disconnected_t;
+        typedef std::function<int(app &)> callback_fn_on_all_module_inited_t;
 
     public:
         app();
@@ -126,11 +127,13 @@ namespace atapp {
         void set_evt_on_send_fail(callback_fn_on_send_fail_t fn);
         void set_evt_on_app_connected(callback_fn_on_connected_t fn);
         void set_evt_on_app_disconnected(callback_fn_on_disconnected_t fn);
+        void set_evt_on_all_module_inited(callback_fn_on_all_module_inited_t fn);
 
         const callback_fn_on_msg_t &get_evt_on_recv_msg() const;
         const callback_fn_on_send_fail_t &get_evt_on_send_fail() const;
         const callback_fn_on_connected_t &get_evt_on_app_connected() const;
         const callback_fn_on_disconnected_t &get_evt_on_app_disconnected() const;
+        const callback_fn_on_all_module_inited_t &get_evt_on_all_module_inited() const;
 
     private:
         static void ev_stop_timeout(uv_timer_t *handle);
@@ -219,6 +222,7 @@ namespace atapp {
         callback_fn_on_send_fail_t evt_on_send_fail_;
         callback_fn_on_connected_t evt_on_app_connected_;
         callback_fn_on_disconnected_t evt_on_app_disconnected_;
+        callback_fn_on_all_module_inited_t evt_on_all_module_inited_;
     };
 }
 

@@ -118,6 +118,11 @@ namespace atapp {
             }
         }
 
+        // callback of all modules inited
+        if (evt_on_all_module_inited_) {
+            evt_on_all_module_inited_(*this);
+        }
+
         // step 9. set running
         return run_ev_loop(ev_loop);
     }
@@ -312,11 +317,13 @@ namespace atapp {
     void app::set_evt_on_send_fail(callback_fn_on_send_fail_t fn) { evt_on_send_fail_ = fn; }
     void app::set_evt_on_app_connected(callback_fn_on_connected_t fn) { evt_on_app_connected_ = fn; }
     void app::set_evt_on_app_disconnected(callback_fn_on_disconnected_t fn) { evt_on_app_disconnected_ = fn; }
+    void app::set_evt_on_all_module_inited(callback_fn_on_all_module_inited_t fn) { evt_on_all_module_inited_ = fn; }
 
     const app::callback_fn_on_msg_t &app::get_evt_on_recv_msg() const { return evt_on_recv_msg_; }
     const app::callback_fn_on_send_fail_t &app::get_evt_on_send_fail() const { return evt_on_send_fail_; }
     const app::callback_fn_on_connected_t &app::get_evt_on_app_connected() const { return evt_on_app_connected_; }
     const app::callback_fn_on_disconnected_t &app::get_evt_on_app_disconnected() const { return evt_on_app_disconnected_; }
+    const app::callback_fn_on_all_module_inited_t &app::get_evt_on_all_module_inited() const { return evt_on_all_module_inited_; }
 
     void app::ev_stop_timeout(uv_timer_t *handle) {
         assert(handle);
@@ -377,6 +384,11 @@ namespace atapp {
             bool optv = false;
             cfg_loader_.dump_to("atapp.bus.options.global_router", optv);
             conf_.bus_conf.flags.set(atbus::node::conf_flag_t::EN_CONF_GLOBAL_ROUTER, optv);
+        }
+        {
+            bool optv = false;
+            cfg_loader_.dump_to("atapp.bus.options.no_connect_reg", optv);
+            conf_.bus_conf.flags.set(atbus::node::conf_flag_t::EN_CONF_NO_CONNECT_REG, optv);
         }
 
         cfg_loader_.dump_to("atapp.bus.proxy", conf_.bus_conf.father_address);
@@ -782,7 +794,7 @@ namespace atapp {
 
     int app::prog_option_handler_set_id(util::cli::callback_param params) {
         if (params.get_params_number() > 0) {
-            conf_.id = params[0]->to<app_id_t>();
+            util::string::str2int(conf_.id, params[0]->to_string());
         } else {
             util::cli::shell_stream ss(std::cerr);
             ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "-id require 1 parameter" << std::endl;
@@ -994,17 +1006,17 @@ namespace atapp {
     int app::bus_evt_callback_on_reg(const atbus::node &n, const atbus::endpoint *ep, const atbus::connection *conn, int res) {
         if (NULL != conn) {
             if (NULL != ep) {
-                WLOGINFO("bus node %llx endpoint %llx connection %s rigistered, res: %d", n.get_id(), ep->get_id(),
+                WLOGINFO("bus node %llx endpoint %llx connection %s registered, res: %d", n.get_id(), ep->get_id(),
                          conn->get_address().address.c_str(), res);
             } else {
-                WLOGINFO("bus node %llx connection %s rigistered, res: %d", n.get_id(), conn->get_address().address.c_str(), res);
+                WLOGINFO("bus node %llx connection %s registered, res: %d", n.get_id(), conn->get_address().address.c_str(), res);
             }
 
         } else {
             if (NULL != ep) {
-                WLOGINFO("bus node %llx endpoint %llx rigistered, res: %d", n.get_id(), ep->get_id(), res);
+                WLOGINFO("bus node %llx endpoint %llx registered, res: %d", n.get_id(), ep->get_id(), res);
             } else {
-                WLOGINFO("bus node %llx rigistered, res: %d", n.get_id(), res);
+                WLOGINFO("bus node %llx registered, res: %d", n.get_id(), res);
             }
         }
 
@@ -1160,13 +1172,6 @@ namespace atapp {
         if (ret < 0) {
             ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "start bus node failed. ret: " << ret << std::endl;
             return ret;
-        }
-
-        // check if listen address is a loopback address
-        if ("ipv4" == use_addr.scheme && "0.0.0.0" == use_addr.host) {
-            make_address("ipv4", "127.0.0.1", use_addr.port, use_addr);
-        } else if ("ipv6" == use_addr.scheme && "::" == use_addr.host) {
-            make_address("ipv6", "::1", use_addr.port, use_addr);
         }
 
         // step 2. connect failed return error code
