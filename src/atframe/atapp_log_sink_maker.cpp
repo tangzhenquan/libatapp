@@ -44,12 +44,8 @@ namespace atapp {
             file_sink.set_check_interval(check_interval);
 
             if (ini_cfg.get_children().end() != ini_cfg.get_children().find("auto_flush")) {
-                std::string cfg_val = ini_cfg["auto_flush"].as_cpp_string();
-                if (cfg_val.empty() || "no" == cfg_val || "false" == cfg_val || "disabled" == cfg_val) {
-                    file_sink.set_auto_flush(false);
-                } else {
-                    file_sink.set_auto_flush(true);
-                }
+                uint32_t auto_flush = ini_cfg["auto_flush"].as_uint32();
+                file_sink.set_auto_flush(auto_flush);
             }
 
             return file_sink;
