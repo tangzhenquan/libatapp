@@ -912,12 +912,12 @@ namespace atapp {
     }
 
     int app::command_handler_stop(util::cli::callback_param params) {
-        WLOGINFO("app node %llx run stop command", get_id());
+        WLOGINFO("app node 0x%llx run stop command", get_id());
         return stop();
     }
 
     int app::command_handler_reload(util::cli::callback_param params) {
-        WLOGINFO("app node %llx run reload command", get_id());
+        WLOGINFO("app node 0x%llx run reload command", get_id());
         return reload();
     }
 
@@ -940,11 +940,11 @@ namespace atapp {
                                              const atbus::protocol::msg *m) {
         // call failed callback if it's message transfer
         if (NULL == m) {
-            WLOGERROR("app %llx receive a send failure without message", get_id());
+            WLOGERROR("app 0x%llx receive a send failure without message", get_id());
             return -1;
         }
 
-        WLOGERROR("app %llx receive a send failure from %llx, message cmd: %d, type: %d, ret: %d, sequence: %u", get_id(),
+        WLOGERROR("app 0x%llx receive a send failure from 0x%llx, message cmd: %d, type: %d, ret: %d, sequence: %u", get_id(),
                   m->head.src_bus_id, static_cast<int>(m->head.cmd), m->head.type, m->head.ret, m->head.sequence);
 
         if ((ATBUS_CMD_DATA_TRANSFORM_REQ == m->head.cmd || ATBUS_CMD_DATA_TRANSFORM_RSP == m->head.cmd) && evt_on_send_fail_) {
@@ -962,17 +962,17 @@ namespace atapp {
             const char* msg = UV_EOF == errcode ? "got EOF" : "reset by peer";
             if (NULL != conn) {
                 if (NULL != ep) {
-                    WLOGINFO("bus node %llx endpoint %llx connection %s closed: %s", n.get_id(), ep->get_id(),
+                    WLOGINFO("bus node 0x%llx endpoint 0x%llx connection %s closed: %s", n.get_id(), ep->get_id(),
                         conn->get_address().address.c_str(), msg);
                 } else {
-                    WLOGINFO("bus node %llx connection %s closed: %s", n.get_id(), conn->get_address().address.c_str(), msg);
+                    WLOGINFO("bus node 0x%llx connection %s closed: %s", n.get_id(), conn->get_address().address.c_str(), msg);
                 }
 
             } else {
                 if (NULL != ep) {
-                    WLOGINFO("bus node %llx endpoint %llx closed: %s", n.get_id(), ep->get_id(), msg);
+                    WLOGINFO("bus node 0x%llx endpoint 0x%llx closed: %s", n.get_id(), ep->get_id(), msg);
                 } else {
-                    WLOGINFO("bus node %llx closed: %s", n.get_id(), msg);
+                    WLOGINFO("bus node 0x%llx closed: %s", n.get_id(), msg);
                 }
             }
             return 0;
@@ -980,18 +980,18 @@ namespace atapp {
 
         if (NULL != conn) {
             if (NULL != ep) {
-                WLOGERROR("bus node %llx endpoint %llx connection %s error, status: %d, error code: %d", n.get_id(), ep->get_id(),
+                WLOGERROR("bus node 0x%llx endpoint 0x%llx connection %s error, status: %d, error code: %d", n.get_id(), ep->get_id(),
                           conn->get_address().address.c_str(), status, errcode);
             } else {
-                WLOGERROR("bus node %llx connection %s error, status: %d, error code: %d", n.get_id(), conn->get_address().address.c_str(),
+                WLOGERROR("bus node 0x%llx connection %s error, status: %d, error code: %d", n.get_id(), conn->get_address().address.c_str(),
                           status, errcode);
             }
 
         } else {
             if (NULL != ep) {
-                WLOGERROR("bus node %llx endpoint %llx error, status: %d, error code: %d", n.get_id(), ep->get_id(), status, errcode);
+                WLOGERROR("bus node 0x%llx endpoint 0x%llx error, status: %d, error code: %d", n.get_id(), ep->get_id(), status, errcode);
             } else {
-                WLOGERROR("bus node %llx error, status: %d, error code: %d", n.get_id(), status, errcode);
+                WLOGERROR("bus node 0x%llx error, status: %d, error code: %d", n.get_id(), status, errcode);
             }
         }
 
@@ -1001,17 +1001,17 @@ namespace atapp {
     int app::bus_evt_callback_on_reg(const atbus::node &n, const atbus::endpoint *ep, const atbus::connection *conn, int res) {
         if (NULL != conn) {
             if (NULL != ep) {
-                WLOGINFO("bus node %llx endpoint %llx connection %s registered, res: %d", n.get_id(), ep->get_id(),
+                WLOGINFO("bus node 0x%llx endpoint 0x%llx connection %s registered, res: %d", n.get_id(), ep->get_id(),
                          conn->get_address().address.c_str(), res);
             } else {
-                WLOGINFO("bus node %llx connection %s registered, res: %d", n.get_id(), conn->get_address().address.c_str(), res);
+                WLOGINFO("bus node 0x%llx connection %s registered, res: %d", n.get_id(), conn->get_address().address.c_str(), res);
             }
 
         } else {
             if (NULL != ep) {
-                WLOGINFO("bus node %llx endpoint %llx registered, res: %d", n.get_id(), ep->get_id(), res);
+                WLOGINFO("bus node 0x%llx endpoint 0x%llx registered, res: %d", n.get_id(), ep->get_id(), res);
             } else {
-                WLOGINFO("bus node %llx registered, res: %d", n.get_id(), res);
+                WLOGINFO("bus node 0x%llx registered, res: %d", n.get_id(), res);
             }
         }
 
@@ -1019,22 +1019,22 @@ namespace atapp {
     }
 
     int app::bus_evt_callback_on_shutdown(const atbus::node &n, int reason) {
-        WLOGINFO("bus node %llx shutdown, reason: %d", n.get_id(), reason);
+        WLOGINFO("bus node 0x%llx shutdown, reason: %d", n.get_id(), reason);
         return stop();
     }
 
     int app::bus_evt_callback_on_available(const atbus::node &n, int res) {
-        WLOGINFO("bus node %llx initialze done, res: %d", n.get_id(), res);
+        WLOGINFO("bus node 0x%llx initialze done, res: %d", n.get_id(), res);
         return res;
     }
 
     int app::bus_evt_callback_on_invalid_connection(const atbus::node &n, const atbus::connection *conn, int res) {
         if (NULL == conn) {
-            WLOGERROR("bus node %llx recv a invalid NULL connection , res: %d", n.get_id(), res);
+            WLOGERROR("bus node 0x%llx recv a invalid NULL connection , res: %d", n.get_id(), res);
         } else {
             // already disconncted finished.
             if (atbus::connection::state_t::DISCONNECTED != conn->get_status()) {
-                WLOGERROR("bus node %llx make connection to %s done, res: %d", n.get_id(), conn->get_address().address.c_str(), res);
+                WLOGERROR("bus node 0x%llx make connection to %s done, res: %d", n.get_id(), conn->get_address().address.c_str(), res);
             }
         }
         return 0;
@@ -1060,9 +1060,9 @@ namespace atapp {
 
     int app::bus_evt_callback_on_add_endpoint(const atbus::node &n, atbus::endpoint *ep, int res) {
         if (NULL == ep) {
-            WLOGERROR("bus node %llx make connection to NULL, res: %d", n.get_id(), res);
+            WLOGERROR("bus node 0x%llx make connection to NULL, res: %d", n.get_id(), res);
         } else {
-            WLOGINFO("bus node %llx make connection to %llx done, res: %d", n.get_id(), ep->get_id(), res);
+            WLOGINFO("bus node 0x%llx make connection to 0x%llx done, res: %d", n.get_id(), ep->get_id(), res);
 
             if (evt_on_app_connected_) {
                 evt_on_app_connected_(std::ref(*this), std::ref(*ep), res);
@@ -1073,9 +1073,9 @@ namespace atapp {
 
     int app::bus_evt_callback_on_remove_endpoint(const atbus::node &n, atbus::endpoint *ep, int res) {
         if (NULL == ep) {
-            WLOGERROR("bus node %llx release connection to NULL, res: %d", n.get_id(), res);
+            WLOGERROR("bus node 0x%llx release connection to NULL, res: %d", n.get_id(), res);
         } else {
-            WLOGINFO("bus node %llx release connection to %llx done, res: %d", n.get_id(), ep->get_id(), res);
+            WLOGINFO("bus node 0x%llx release connection to 0x%llx done, res: %d", n.get_id(), ep->get_id(), res);
 
             if (evt_on_app_disconnected_) {
                 evt_on_app_disconnected_(std::ref(*this), std::ref(*ep), res);
@@ -1132,9 +1132,17 @@ namespace atapp {
             }
 
             if (parsed_level > use_level) {
+#ifdef _WIN32
+                // On windows, shared memory must be load in the same directory, so use IOS first
+                // Use Global\\ prefix requires the SeCreateGlobalPrivilege privilege 
+                if (5 == parsed_level && 0 != use_level) {
+                    continue;
+                }
+#endif
                 use_addr = parsed_addr;
                 use_level = parsed_level;
             }
+
         }
 
         if (0 == use_level) {
