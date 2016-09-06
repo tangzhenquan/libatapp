@@ -765,15 +765,30 @@ namespace atapp {
     }
 
     void app::print_help() {
-        printf("Usage: %s <options> <command> [command paraters...]\n", conf_.execute_path);
-        printf("%s\n", get_option_manager()->get_help_msg().c_str());
+        util::cli::shell_stream shls(std::cout);
+
+        shls() << util::cli::shell_font_style::SHELL_FONT_COLOR_YELLOW << util::cli::shell_font_style::SHELL_FONT_SPEC_BOLD <<
+            "Usage: " << conf_.execute_path << " <options> <command> [command paraters...]" << std::endl;
+        shls() << get_option_manager()->get_help_msg() << std::endl << std::endl;
+
+        shls() << util::cli::shell_font_style::SHELL_FONT_COLOR_YELLOW << util::cli::shell_font_style::SHELL_FONT_SPEC_BOLD <<
+            "Custom command help:" << std::endl;
+        shls() << get_command_manager()->get_help_msg() << std::endl;
     }
 
-    int app::prog_option_handler_help(util::cli::callback_param params, util::cli::cmd_option *opt_mgr) {
+    int app::prog_option_handler_help(util::cli::callback_param params, 
+        util::cli::cmd_option *opt_mgr, util::cli::cmd_option_ci* cmd_mgr) {
         assert(opt_mgr);
         mode_ = mode_t::INFO;
-        printf("Usage: %s <options> <command> [command paraters...]\n", conf_.execute_path);
-        printf("%s\n", opt_mgr->get_help_msg().c_str());
+        util::cli::shell_stream shls(std::cout);
+
+        shls() << util::cli::shell_font_style::SHELL_FONT_COLOR_YELLOW << util::cli::shell_font_style::SHELL_FONT_SPEC_BOLD <<
+            "Usage: " << conf_.execute_path << " <options> <command> [command paraters...]" << std::endl;
+        shls() << opt_mgr->get_help_msg() << std::endl << std::endl;
+
+        shls() << util::cli::shell_font_style::SHELL_FONT_COLOR_YELLOW << util::cli::shell_font_style::SHELL_FONT_SPEC_BOLD <<
+            "Custom command help:" << std::endl;
+        shls() << cmd_mgr->get_help_msg() << std::endl;
         return 0;
     }
 
@@ -862,8 +877,9 @@ namespace atapp {
         assert(argc > 0);
 
         util::cli::cmd_option::ptr_type opt_mgr = get_option_manager();
+        util::cli::cmd_option_ci::ptr_type cmd_mgr = get_command_manager();
         // show help and exit
-        opt_mgr->bind_cmd("-h, --help, help", &app::prog_option_handler_help, this, opt_mgr.get())
+        opt_mgr->bind_cmd("-h, --help, help", &app::prog_option_handler_help, this, opt_mgr.get(), cmd_mgr.get())
             ->set_help_msg("-h. --help, help                       show this help message.");
 
         // show version and exit

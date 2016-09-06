@@ -164,7 +164,7 @@ namespace atapp {
         void print_help();
         // ============ inner functional handlers ============
     private:
-        int prog_option_handler_help(util::cli::callback_param params, util::cli::cmd_option *opt_mgr);
+        int prog_option_handler_help(util::cli::callback_param params, util::cli::cmd_option *opt_mgr, util::cli::cmd_option_ci* cmd_mgr);
         int prog_option_handler_version(util::cli::callback_param params);
         int prog_option_handler_set_id(util::cli::callback_param params);
         int prog_option_handler_set_conf_file(util::cli::callback_param params);
