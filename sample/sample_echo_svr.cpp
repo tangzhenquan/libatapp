@@ -69,13 +69,13 @@ static int app_option_handler_echo(util::cli::callback_param params) {
     return 0;
 }
 
-static int app_handle_on_msg(atapp::app &app, const atapp::app::msg_head_t *head, const void *buffer, size_t len) {
+static int app_handle_on_msg(atapp::app &app, const atapp::app::msg_t& msg, const void *buffer, size_t len) {
     std::string data;
     data.assign(reinterpret_cast<const char *>(buffer), len);
     WLOGINFO("receive a message %s", data.c_str());
 
-    if (NULL != head && 0 != head->src_bus_id) {
-        return app.get_bus_node()->send_data(head->src_bus_id, head->type, buffer, len);
+    if (NULL != msg.body.forward && 0 != msg.body.forward->from) {
+        return app.get_bus_node()->send_data(msg.body.forward->from, msg.head.type, buffer, len);
     }
 
     return 0;

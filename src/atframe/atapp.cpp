@@ -927,10 +927,10 @@ namespace atapp {
     }
 
     int app::bus_evt_callback_on_recv_msg(const atbus::node &, const atbus::endpoint *, const atbus::connection *,
-                                          const atbus::protocol::msg_head *head, const void *buffer, size_t len) {
+        const msg_t & msg, const void *buffer, size_t len) {
         // call recv callback
         if (evt_on_recv_msg_) {
-            return evt_on_recv_msg_(std::ref(*this), head, buffer, len);
+            return evt_on_recv_msg_(std::ref(*this), std::cref(msg), buffer, len);
         }
 
         return 0;

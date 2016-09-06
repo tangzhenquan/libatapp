@@ -32,7 +32,7 @@ namespace atapp {
     class app {
     public:
         typedef atbus::node::bus_id_t app_id_t;
-        typedef atbus::protocol::msg_head msg_head_t;
+        typedef atbus::protocol::msg msg_t;
         typedef std::shared_ptr<module_impl> module_ptr_t;
 
         struct flag_t {
@@ -53,7 +53,7 @@ namespace atapp {
         // return > 0 means busy and will enter tick again as soon as possiable
         typedef std::function<int()> tick_handler_t;
         // parameters is (message head, buffer address, buffer size)
-        typedef std::function<int(const msg_head_t *, const void *, size_t)> msg_handler_t;
+        typedef std::function<int(const msg_t&, const void *, size_t)> msg_handler_t;
 
         struct timer_info_t {
             bool is_activited;
@@ -70,7 +70,7 @@ namespace atapp {
         };
 
 
-        typedef std::function<int(app &, const msg_head_t *, const void *, size_t)> callback_fn_on_msg_t;
+        typedef std::function<int(app &, const msg_t&, const void *, size_t)> callback_fn_on_msg_t;
         typedef std::function<int(app &, app_id_t src_pd, app_id_t dst_pd, const atbus::protocol::msg &m)> callback_fn_on_send_fail_t;
         typedef std::function<int(app &, atbus::endpoint &, int)> callback_fn_on_connected_t;
         typedef std::function<int(app &, atbus::endpoint &, int)> callback_fn_on_disconnected_t;
@@ -182,7 +182,7 @@ namespace atapp {
 
     private:
         int bus_evt_callback_on_recv_msg(const atbus::node &, const atbus::endpoint *, const atbus::connection *,
-                                         const atbus::protocol::msg_head *, const void *, size_t);
+                                         const msg_t &, const void *, size_t);
         int bus_evt_callback_on_send_failed(const atbus::node &, const atbus::endpoint *, const atbus::connection *,
                                             const atbus::protocol::msg *m);
         int bus_evt_callback_on_error(const atbus::node &, const atbus::endpoint *, const atbus::connection *, int, int);
