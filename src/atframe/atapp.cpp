@@ -636,8 +636,22 @@ namespace atapp {
         for (size_t i = 0; i < conf_.bus_listen.size(); ++i) {
             res = connection_node->listen(conf_.bus_listen[i].c_str());
             if (res < 0) {
-                WLOGERROR("bus node listen %s failed. res: %d", conf_.bus_listen[i].c_str(), res);
-                ret = res;
+#ifdef _WIN32
+                if (EN_ATBUS_ERR_SHM_GET_FAILED == res) {
+                    WLOGERROR("Using global shared memory require SeCreateGlobalPrivilege, try to run as Administrator.\nWe will ignore %s this time.", conf_.bus_listen[i].c_str());
+                    util::cli::shell_stream ss(std::cerr);
+                    ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED <<
+                        "Using global shared memory require SeCreateGlobalPrivilege, try to run as Administrator." << std::endl <<
+                        "We will ignore " << conf_.bus_listen[i] << " this time." << std::endl;
+
+                    res = 0;
+                } else {
+#endif
+                    WLOGERROR("bus node listen %s failed. res: %d", conf_.bus_listen[i].c_str(), res);
+                    ret = res;
+#ifdef _WIN32
+                }
+#endif
             }
         }
 
