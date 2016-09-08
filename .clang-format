@@ -5,7 +5,7 @@ AlignEscapedNewlinesLeft: true
 AllowAllParametersOfDeclarationOnNextLine: false
 AllowShortIfStatementsOnASingleLine: true
 AlwaysBreakTemplateDeclarations: true
-ColumnLimit: 140
+ColumnLimit: 160
 CommentPragmas: ''
 IndentWidth: 4
 MaxEmptyLinesToKeep: 2
