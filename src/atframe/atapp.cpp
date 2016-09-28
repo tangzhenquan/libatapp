@@ -33,6 +33,12 @@ namespace atapp {
         if (this == last_instance_) {
             last_instance_ = NULL;
         }
+
+        owent_foreach(module_ptr_t & mod, modules_) {
+            if (mod && mod->owner_ == this) {
+                mod->owner_ = NULL;
+            }
+        }
     }
 
     int app::run(atbus::adapter::loop_t *ev_loop, int argc, const char **argv, void *priv_data) {
