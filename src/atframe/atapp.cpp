@@ -332,12 +332,16 @@ namespace atapp {
     const app::callback_fn_on_all_module_inited_t &app::get_evt_on_all_module_inited() const { return evt_on_all_module_inited_; }
 
     void app::ev_stop_timeout(uv_timer_t *handle) {
-        assert(handle);
-        assert(handle->data);
+        assert(handle && handle->data);
 
-        app *self = reinterpret_cast<app *>(handle->data);
-        self->set_flag(flag_t::TIMEOUT, true);
-        uv_stop(handle->loop);
+        if (NULL != handle && NULL != handle->data) {
+            app *self = reinterpret_cast<app *>(handle->data);
+            self->set_flag(flag_t::TIMEOUT, true);
+        }
+
+        if (NULL != handle) {
+            uv_stop(handle->loop);
+        }
     }
 
     bool app::set_flag(flag_t::type f, bool v) {
@@ -650,7 +654,7 @@ namespace atapp {
                         "Using global shared memory require SeCreateGlobalPrivilege, try to run as Administrator." << std::endl <<
                         "We will ignore " << conf_.bus_listen[i] << " this time." << std::endl;
 
-                    res = 0;
+                    // res = 0; // Value stored to 'res' is never read
                 } else {
 #endif
                     WLOGERROR("bus node listen %s failed. res: %d", conf_.bus_listen[i].c_str(), res);
@@ -755,11 +759,12 @@ namespace atapp {
     }
 
     static void _app_tick_timer_handle(uv_timer_t *handle) {
-        assert(handle);
-        assert(handle->data);
+        assert(handle && handle->data);
 
-        app *self = reinterpret_cast<app *>(handle->data);
-        self->tick();
+        if (NULL != handle && NULL != handle->data) {
+            app *self = reinterpret_cast<app *>(handle->data);
+            self->tick();
+        }
     }
 
     int app::setup_timer() {
