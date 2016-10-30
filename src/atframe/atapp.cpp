@@ -1158,6 +1158,7 @@ namespace atapp {
 
         // step 1. using the fastest way to connect to server
         int use_level = 0;
+        bool is_sync_channel = false;
         atbus::channel::channel_address_t use_addr;
 
         for (size_t i = 0; i < conf_.bus_listen.size(); ++i) {
@@ -1166,6 +1167,7 @@ namespace atapp {
             int parsed_level = 0;
             if (0 == UTIL_STRFUNC_STRNCASE_CMP("shm", parsed_addr.scheme.c_str(), 3)) {
                 parsed_level = 5;
+                is_sync_channel = true;
             } else if (0 == UTIL_STRFUNC_STRNCASE_CMP("unix", parsed_addr.scheme.c_str(), 4)) {
                 parsed_level = 4;
             } else if (0 == UTIL_STRFUNC_STRNCASE_CMP("ipv6", parsed_addr.scheme.c_str(), 4)) {
@@ -1223,7 +1225,25 @@ namespace atapp {
         }
 
         // step 2. connect failed return error code
-        ret = bus_node_->connect(use_addr.address.c_str());
+        atbus::endpoint *ep = NULL;
+        if (is_sync_channel) {
+            // preallocate endpoint when using shared memory channel, because this channel can not be connected without endpoint
+            atbus::endpoint::ptr_t new_ep = atbus::endpoint::create(bus_node_.get(), conf_.id, conf_.bus_conf.children_mask, 0, "");
+            ret = bus_node_->add_endpoint(new_ep);
+            if (ret < 0) {
+                ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "connect to " << use_addr.address << " failed. ret: " << ret
+                    << std::endl;
+                return ret;
+            }
+
+            ret = bus_node_->connect(use_addr.address.c_str(), new_ep.get());
+            if (ret >= 0) {
+                ep = new_ep.get();
+            }
+        } else {
+            ret = bus_node_->connect(use_addr.address.c_str());
+        }
+        
         if (ret < 0) {
             ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "connect to " << use_addr.address << " failed. ret: " << ret
                  << std::endl;
@@ -1245,7 +1265,6 @@ namespace atapp {
         }
 
         // step 4. waiting for connect success
-        atbus::endpoint *ep = NULL;
         while (NULL == ep) {
             uv_run(ev_loop, UV_RUN_ONCE);
 
@@ -1278,7 +1297,7 @@ namespace atapp {
         }
 
         // step 6. waiting for send done(for shm, no need to wait, for io_stream fd, waiting write callback)
-        if (use_level < 5) {
+        if (!is_sync_channel) {
             do {
                 size_t start_times = ep->get_stat_push_start_times();
                 size_t end_times = ep->get_stat_push_success_times() + ep->get_stat_push_failed_times();
