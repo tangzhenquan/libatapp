@@ -215,10 +215,11 @@ namespace atapp {
     int app::stop() {
         WLOGINFO("============ receive stop signal and ready to stop all modules ============");
         // step 1. set stop flag.
-        bool is_stoping = set_flag(flag_t::STOPING, true);
+        // bool is_stoping = set_flag(flag_t::STOPING, true);
+        set_flag(flag_t::STOPING, true);
 
         // TODO stop reason = manual stop
-        if (!is_stoping && bus_node_) {
+        if (bus_node_ && ::atbus::node::state_t::CREATED != bus_node_->get_state() && !bus_node_->check(::atbus::node::flag_t::EN_FT_SHUTDOWN)) {
             bus_node_->shutdown(0);
         }
 
@@ -262,17 +263,24 @@ namespace atapp {
             }
 
             // step 2. proc atbus
-            res = bus_node_->proc(tick_timer_.sec, tick_timer_.usec);
-            if (res < 0) {
-                WLOGERROR("atbus run tick and return %d", res);
-            } else {
-                active_count += res;
+            if (bus_node_ && ::atbus::node::state_t::CREATED != bus_node_->get_state()) {
+                res = bus_node_->proc(tick_timer_.sec, tick_timer_.usec);
+                if (res < 0) {
+                    WLOGERROR("atbus run tick and return %d", res);
+                } else {
+                    active_count += res;
+                }
             }
 
             // only tick time less than tick interval will run loop again
             util::time::time_utility::update();
             end_tp = util::time::time_utility::now();
         } while (active_count > 0 && (end_tp - start_tp) >= std::chrono::milliseconds(conf_.tick_interval));
+
+        // if is stoping, quit loop  every tick
+        if(check_flag(flag_t::STOPING) && bus_node_) {
+            uv_stop(bus_node_->get_evloop());
+        }
         return 0;
     }
 
@@ -446,6 +454,7 @@ namespace atapp {
 
         while (keep_running && bus_node_) {
             // step X. loop uv_run util stop flag is set
+            assert(bus_node_->get_evloop());
             uv_run(bus_node_->get_evloop(), UV_RUN_DEFAULT);
             if (check_flag(flag_t::STOPING)) {
                 keep_running = false;
@@ -492,10 +501,7 @@ namespace atapp {
                 }
             }
 
-            // if atbus is at shutdown state, loop
-            if (keep_running && bus_node_->check(atbus::node::flag_t::EN_FT_SHUTDOWN)) {
-                uv_run(bus_node_->get_evloop(), UV_RUN_DEFAULT);
-            }
+            // if atbus is at shutdown state, loop event dispatcher using next while iterator
         }
 
         // close timer
