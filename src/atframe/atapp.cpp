@@ -47,6 +47,9 @@ namespace atapp {
             bus_node_->reset();
             bus_node_.reset();
         }
+
+        assert(!tick_timer_.tick_timer.is_activited);
+        assert(!tick_timer_.timeout_timer.is_activited);
     }
 
     int app::run(atbus::adapter::loop_t *ev_loop, int argc, const char **argv, void *priv_data) {
