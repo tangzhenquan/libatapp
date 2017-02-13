@@ -42,6 +42,7 @@ if ( "${CMAKE_CURRENT_LIST_DIR}/3rd_party/libatbus/repo" STREQUAL ${3RD_PARTY_LI
 endif()
 
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/src")
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/binding/c")
 
 if (PROJECT_ENABLE_SAMPLE)
     add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/sample")
