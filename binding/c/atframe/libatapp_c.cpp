@@ -113,6 +113,31 @@ namespace detail {
         void *private_data_;
     };
 
+    struct libatapp_c_on_cmd_option_functor {
+        libatapp_c_on_cmd_option_functor(libatapp_c_on_cmd_option_fn_t fn, void *priv_data) : callee_(fn), private_data_(priv_data) {}
+
+        int operator()(util::cli::callback_param params) {
+            if (NULL == callee_) {
+                return 0;
+            }
+
+            std::vector<const char*> buf_addrs;
+            std::vector<uint64_t> buf_sz;
+            buf_addrs.resize(params.get_params_number());
+            buf_sz.resize(params.get_params_number());
+            for(size_t i = 0; i < params.get_params_number(); ++ i) {
+                buf_addrs[i] = params[i]->to_cpp_string().c_str();
+                buf_sz[i] = static_cast<uint64_t>(params[i]->to_cpp_string().size());
+            }
+
+            libatapp_c_context ctx;
+            return (*callee_)(ctx, &buf_addrs[0], &buf_sz[0], private_data_);
+        }
+
+        libatapp_c_on_cmd_option_fn_t callee_;
+        void *private_data_;
+    };
+
     class libatapp_c_on_module : public ::atapp::module_impl {
     public:
         libatapp_c_on_module(const char *name) {
@@ -209,7 +234,7 @@ ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_set_on_msg_fn(libatapp_c_context c
         return;
     }
 
-    return ATAPP_CONTEXT(context)->set_evt_on_recv_msg(::detail::libatapp_c_on_msg_functor(fn, priv_data));
+    ATAPP_CONTEXT(context)->set_evt_on_recv_msg(::detail::libatapp_c_on_msg_functor(fn, priv_data));
 }
 
 ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_set_on_send_fail_fn(libatapp_c_context context, libatapp_c_on_send_fail_fn_t fn, void *priv_data) {
@@ -217,7 +242,7 @@ ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_set_on_send_fail_fn(libatapp_c_con
         return;
     }
 
-    return ATAPP_CONTEXT(context)->set_evt_on_send_fail(::detail::libatapp_c_on_send_fail_functor(fn, priv_data));
+    ATAPP_CONTEXT(context)->set_evt_on_send_fail(::detail::libatapp_c_on_send_fail_functor(fn, priv_data));
 }
 
 ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_set_on_connected_fn(libatapp_c_context context, libatapp_c_on_connected_fn_t fn, void *priv_data) {
@@ -225,7 +250,7 @@ ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_set_on_connected_fn(libatapp_c_con
         return;
     }
 
-    return ATAPP_CONTEXT(context)->set_evt_on_app_connected(::detail::libatapp_c_on_connected_functor(fn, priv_data));
+    ATAPP_CONTEXT(context)->set_evt_on_app_connected(::detail::libatapp_c_on_connected_functor(fn, priv_data));
 }
 
 ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_set_on_disconnected_fn(libatapp_c_context context, libatapp_c_on_disconnected_fn_t fn, void *priv_data) {
@@ -233,7 +258,7 @@ ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_set_on_disconnected_fn(libatapp_c_
         return;
     }
 
-    return ATAPP_CONTEXT(context)->set_evt_on_app_disconnected(::detail::libatapp_c_on_disconnected_functor(fn, priv_data));
+    ATAPP_CONTEXT(context)->set_evt_on_app_disconnected(::detail::libatapp_c_on_disconnected_functor(fn, priv_data));
 }
 
 ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_set_on_all_module_inited_fn(libatapp_c_context context, libatapp_c_on_all_module_inited_fn_t fn,
@@ -242,7 +267,24 @@ ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_set_on_all_module_inited_fn(libata
         return;
     }
 
-    return ATAPP_CONTEXT(context)->set_evt_on_all_module_inited(::detail::libatapp_c_on_all_module_inited_functor(fn, priv_data));
+    ATAPP_CONTEXT(context)->set_evt_on_all_module_inited(::detail::libatapp_c_on_all_module_inited_functor(fn, priv_data));
+}
+
+ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_add_cmd(libatapp_c_context context, const char* cmd, libatapp_c_on_cmd_option_fn_t fn, void *priv_data) {
+    if (ATAPP_CONTEXT_IS_NULL(context)) {
+        return;
+    }
+
+    ATAPP_CONTEXT(context)->get_command_manager()->bind_cmd(cmd, detail::libatapp_c_on_cmd_option_functor(fn, priv_data));
+}
+
+ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_add_option(libatapp_c_context context, const char* opt, libatapp_c_on_cmd_option_fn_t fn, const char* help_msg, void *priv_data) {
+    if (ATAPP_CONTEXT_IS_NULL(context)) {
+        return;
+    }
+
+    ATAPP_CONTEXT(context)->get_option_manager()->bind_cmd(opt, detail::libatapp_c_on_cmd_option_functor(fn, priv_data))
+        ->set_help_msg(NULL == help_msg? opt: help_msg);
 }
 
 ATFRAME_SYMBOL_EXPORT libatapp_c_context __cdecl libatapp_c_create() {
