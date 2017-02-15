@@ -94,15 +94,16 @@ typedef int32_t (*libatapp_c_on_send_fail_fn_t)(libatapp_c_context, uint64_t src
 typedef int32_t (*libatapp_c_on_connected_fn_t)(libatapp_c_context, uint64_t pd, int32_t status, void *priv_data);
 typedef int32_t (*libatapp_c_on_disconnected_fn_t)(libatapp_c_context, uint64_t pd, int32_t status, void *priv_data);
 typedef int32_t (*libatapp_c_on_all_module_inited_fn_t)(libatapp_c_context, void *priv_data);
-typedef int32_t (*libatapp_c_on_cmd_option_fn_t)(libatapp_c_context, const char* buffer[], uint64_t buffer_len[], void *priv_data);
+typedef int32_t (*libatapp_c_on_cmd_option_fn_t)(libatapp_c_context, const char *buffer[], uint64_t buffer_len[], uint64_t sz, void *priv_data);
 
 ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_set_on_msg_fn(libatapp_c_context context, libatapp_c_on_msg_fn_t fn, void *priv_data);
 ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_set_on_send_fail_fn(libatapp_c_context context, libatapp_c_on_send_fail_fn_t fn, void *priv_data);
 ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_set_on_connected_fn(libatapp_c_context context, libatapp_c_on_connected_fn_t fn, void *priv_data);
 ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_set_on_disconnected_fn(libatapp_c_context context, libatapp_c_on_disconnected_fn_t fn, void *priv_data);
 ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_set_on_all_module_inited_fn(libatapp_c_context context, libatapp_c_on_all_module_inited_fn_t fn, void *priv_data);
-ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_add_cmd(libatapp_c_context context, const char* cmd, libatapp_c_on_cmd_option_fn_t fn, void *priv_data);
-ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_add_option(libatapp_c_context context, const char* opt, libatapp_c_on_cmd_option_fn_t fn, const char* help_msg, void *priv_data);
+ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_add_cmd(libatapp_c_context context, const char *cmd, libatapp_c_on_cmd_option_fn_t fn, void *priv_data);
+ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_add_option(libatapp_c_context context, const char *opt, libatapp_c_on_cmd_option_fn_t fn, const char *help_msg,
+                                                         void *priv_data);
 
 
 // =========================== create/destory ===========================
@@ -117,7 +118,7 @@ ATFRAME_SYMBOL_EXPORT int32_t __cdecl libatapp_c_tick(libatapp_c_context context
 
 // =========================== basic ===========================
 ATFRAME_SYMBOL_EXPORT uint64_t __cdecl libatapp_c_get_id(libatapp_c_context context);
-ATFRAME_SYMBOL_EXPORT const char *__cdecl libatapp_c_get_app_version(libatapp_c_context context);
+ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_get_app_version(libatapp_c_context context, const char** verbuf, uint64_t* bufsz);
 
 // =========================== configures ===========================
 ATFRAME_SYMBOL_EXPORT uint64_t __cdecl libatapp_c_get_configure_size(libatapp_c_context context, const char *path);
@@ -149,7 +150,7 @@ ATFRAME_SYMBOL_EXPORT uint64_t __cdecl libatapp_c_msg_get_forward_to(libatapp_c_
 
 // =========================== module ===========================
 ATFRAME_SYMBOL_EXPORT libatapp_c_module __cdecl libatapp_c_module_create(libatapp_c_context context, const char *mod_name);
-ATFRAME_SYMBOL_EXPORT const char *__cdecl libatapp_c_module_get_name(libatapp_c_module mod);
+ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_module_get_name(libatapp_c_module mod, const char** namebuf, uint64_t* bufsz);
 ATFRAME_SYMBOL_EXPORT libatapp_c_context __cdecl libatapp_c_module_get_context(libatapp_c_module mod);
 typedef int32_t (*libatapp_c_module_on_init_fn_t)(libatapp_c_module, void *priv_data);
 typedef int32_t (*libatapp_c_module_on_reload_fn_t)(libatapp_c_module, void *priv_data);

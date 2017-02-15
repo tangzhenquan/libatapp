@@ -114,26 +114,27 @@ namespace detail {
     };
 
     struct libatapp_c_on_cmd_option_functor {
-        libatapp_c_on_cmd_option_functor(libatapp_c_on_cmd_option_fn_t fn, void *priv_data) : callee_(fn), private_data_(priv_data) {}
+        libatapp_c_on_cmd_option_functor(libatapp_c_context ctx, libatapp_c_on_cmd_option_fn_t fn, void *priv_data) : ctx_(ctx), callee_(fn), private_data_(priv_data) {}
 
         int operator()(util::cli::callback_param params) {
             if (NULL == callee_) {
                 return 0;
             }
 
-            std::vector<const char*> buf_addrs;
+            std::vector<const char *> buf_addrs;
             std::vector<uint64_t> buf_sz;
             buf_addrs.resize(params.get_params_number());
             buf_sz.resize(params.get_params_number());
-            for(size_t i = 0; i < params.get_params_number(); ++ i) {
+            for (size_t i = 0; i < params.get_params_number(); ++i) {
                 buf_addrs[i] = params[i]->to_cpp_string().c_str();
                 buf_sz[i] = static_cast<uint64_t>(params[i]->to_cpp_string().size());
             }
 
-            libatapp_c_context ctx;
-            return (*callee_)(ctx, &buf_addrs[0], &buf_sz[0], private_data_);
+            
+            return (*callee_)(ctx_, &buf_addrs[0], &buf_sz[0], static_cast<uint64_t>(params.get_params_number()), private_data_);
         }
 
+        libatapp_c_context ctx_;
         libatapp_c_on_cmd_option_fn_t callee_;
         void *private_data_;
     };
@@ -270,21 +271,24 @@ ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_set_on_all_module_inited_fn(libata
     ATAPP_CONTEXT(context)->set_evt_on_all_module_inited(::detail::libatapp_c_on_all_module_inited_functor(fn, priv_data));
 }
 
-ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_add_cmd(libatapp_c_context context, const char* cmd, libatapp_c_on_cmd_option_fn_t fn, void *priv_data) {
+ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_add_cmd(libatapp_c_context context, const char *cmd, libatapp_c_on_cmd_option_fn_t fn, void *priv_data) {
     if (ATAPP_CONTEXT_IS_NULL(context)) {
         return;
     }
 
-    ATAPP_CONTEXT(context)->get_command_manager()->bind_cmd(cmd, detail::libatapp_c_on_cmd_option_functor(fn, priv_data));
+    ATAPP_CONTEXT(context)->get_command_manager()->bind_cmd(cmd, detail::libatapp_c_on_cmd_option_functor(context, fn, priv_data));
 }
 
-ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_add_option(libatapp_c_context context, const char* opt, libatapp_c_on_cmd_option_fn_t fn, const char* help_msg, void *priv_data) {
+ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_add_option(libatapp_c_context context, const char *opt, libatapp_c_on_cmd_option_fn_t fn, const char *help_msg,
+                                                         void *priv_data) {
     if (ATAPP_CONTEXT_IS_NULL(context)) {
         return;
     }
 
-    ATAPP_CONTEXT(context)->get_option_manager()->bind_cmd(opt, detail::libatapp_c_on_cmd_option_functor(fn, priv_data))
-        ->set_help_msg(NULL == help_msg? opt: help_msg);
+    ATAPP_CONTEXT(context)
+        ->get_option_manager()
+        ->bind_cmd(opt, detail::libatapp_c_on_cmd_option_functor(context, fn, priv_data))
+        ->set_help_msg(NULL == help_msg ? opt : help_msg);
 }
 
 ATFRAME_SYMBOL_EXPORT libatapp_c_context __cdecl libatapp_c_create() {
@@ -338,12 +342,24 @@ ATFRAME_SYMBOL_EXPORT uint64_t __cdecl libatapp_c_get_id(libatapp_c_context cont
     return ATAPP_CONTEXT(context)->get_id();
 }
 
-ATFRAME_SYMBOL_EXPORT const char *__cdecl libatapp_c_get_app_version(libatapp_c_context context) {
+ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_get_app_version(libatapp_c_context context, const char** verbuf, uint64_t* bufsz) {
     if (ATAPP_CONTEXT_IS_NULL(context)) {
-        return "";
+        if (NULL != bufsz) {
+            *bufsz = 0;
+        }
+        if (NULL != verbuf) {
+            *verbuf = NULL;
+        }
+
+        return;
     }
 
-    return ATAPP_CONTEXT(context)->get_app_version().c_str();
+    if (NULL != bufsz) {
+        *bufsz = static_cast<uint64_t>(ATAPP_CONTEXT(context)->get_app_version().size());
+    }
+    if (NULL != verbuf) {
+        *verbuf = ATAPP_CONTEXT(context)->get_app_version().c_str();
+    }
 }
 
 ATFRAME_SYMBOL_EXPORT uint64_t __cdecl libatapp_c_get_configure_size(libatapp_c_context context, const char *path) {
@@ -526,12 +542,22 @@ ATFRAME_SYMBOL_EXPORT libatapp_c_module __cdecl libatapp_c_module_create(libatap
     return ret;
 }
 
-ATFRAME_SYMBOL_EXPORT const char *__cdecl libatapp_c_module_get_name(libatapp_c_module mod) {
+ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_module_get_name(libatapp_c_module mod, const char** namebuf, uint64_t* bufsz) {
     if (ATAPP_MODULE_IS_NULL(mod)) {
-        return "";
+        if (NULL != bufsz) {
+            *bufsz = 0;
+        }
+        if (NULL != namebuf) {
+            *namebuf = NULL;
+        }
     }
 
-    return ATAPP_MODULE(mod)->name();
+    if (NULL != bufsz) {
+        *bufsz = static_cast<uint64_t>(strlen(ATAPP_MODULE(mod)->name()));
+    }
+    if (NULL != namebuf) {
+        *namebuf = ATAPP_MODULE(mod)->name();
+    }
 }
 
 ATFRAME_SYMBOL_EXPORT libatapp_c_context __cdecl libatapp_c_module_get_context(libatapp_c_module mod) {
