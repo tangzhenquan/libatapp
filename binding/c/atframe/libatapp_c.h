@@ -101,9 +101,8 @@ ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_set_on_send_fail_fn(libatapp_c_con
 ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_set_on_connected_fn(libatapp_c_context context, libatapp_c_on_connected_fn_t fn, void *priv_data);
 ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_set_on_disconnected_fn(libatapp_c_context context, libatapp_c_on_disconnected_fn_t fn, void *priv_data);
 ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_set_on_all_module_inited_fn(libatapp_c_context context, libatapp_c_on_all_module_inited_fn_t fn, void *priv_data);
-ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_add_cmd(libatapp_c_context context, const char *cmd, libatapp_c_on_cmd_option_fn_t fn, void *priv_data);
-ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_add_option(libatapp_c_context context, const char *opt, libatapp_c_on_cmd_option_fn_t fn, const char *help_msg,
-                                                         void *priv_data);
+ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_add_cmd(libatapp_c_context context, const char *cmd, libatapp_c_on_cmd_option_fn_t fn, const char *help_msg, void *priv_data);
+ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_add_option(libatapp_c_context context, const char *opt, libatapp_c_on_cmd_option_fn_t fn, const char *help_msg, void *priv_data);
 
 
 // =========================== create/destory ===========================
@@ -182,6 +181,7 @@ ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_log_update();
 
 ATFRAME_SYMBOL_EXPORT uint32_t __cdecl libatapp_c_log_get_level(uint32_t tag);
 ATFRAME_SYMBOL_EXPORT int32_t __cdecl libatapp_c_log_check_level(uint32_t tag, uint32_t level);
+ATFRAME_SYMBOL_EXPORT void __cdecl libatapp_c_log_set_project_directory(const char* project_dir, uint64_t dirsz);
 
 #ifdef __cplusplus
 }

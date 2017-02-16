@@ -10,6 +10,7 @@
 
 #include <atframe/atapp.h>
 #include <time/time_utility.h>
+#include <common/file_system.h>
 
 
 class echo_module : public atapp::module_impl {
@@ -78,6 +79,34 @@ struct app_command_handler_transfer {
     }
 };
 
+struct app_command_handler_listen {
+    atapp::app *app_;
+    app_command_handler_listen(atapp::app &a) : app_(&a) {}
+
+    int operator()(util::cli::callback_param params) {
+        if (params.get_params_number() < 1) {
+            WLOGERROR("listen command require at least 1 parameters");
+            return 0;
+        }
+
+        return app_->get_bus_node()->listen(params[0]->to_string());
+    }
+};
+
+struct app_command_handler_connect {
+    atapp::app *app_;
+    app_command_handler_connect(atapp::app &a) : app_(&a) {}
+
+    int operator()(util::cli::callback_param params) {
+        if (params.get_params_number() < 1) {
+            WLOGERROR("connect command require at least 1 parameters");
+            return 0;
+        }
+
+        return app_->get_bus_node()->connect(params[0]->to_string());
+    }
+};
+
 static int app_option_handler_echo(util::cli::callback_param params) {
     std::stringstream ss;
     for (size_t i = 0; i < params.get_params_number(); ++i) {
@@ -118,19 +147,31 @@ static int app_handle_on_disconnected(atapp::app &app, atbus::endpoint &ep, int 
 int main(int argc, char *argv[]) {
     atapp::app app;
 
+    // project directory
+    {
+        std::string proj_dir;
+        util::file_system::dirname(__FILE__, 0, proj_dir, 2);
+        util::log::log_formatter::set_project_directory(proj_dir.c_str(), proj_dir.size());
+    }
+
     // setup module
     app.add_module(std::make_shared<echo_module>());
     // setup cmd
     util::cli::cmd_option_ci::ptr_type cmgr = app.get_command_manager();
     cmgr->bind_cmd("echo", app_command_handler_echo);
-    cmgr->bind_cmd("transfer", app_command_handler_transfer(app));
+    cmgr->bind_cmd("transfer", app_command_handler_transfer(app))
+        ->set_help_msg("transfer    <target bus id> <message> [type=0]              send a message to another atapp");
+    cmgr->bind_cmd("listen", app_command_handler_listen(app))
+        ->set_help_msg("listen      <listen address>                                address(for example: ipv6//:::23456)");
+    cmgr->bind_cmd("connect", app_command_handler_connect(app))
+        ->set_help_msg("connect     <connect address>                               address(for example: ipv4://127.0.0.1:23456)");
 
     // setup options
     util::cli::cmd_option::ptr_type opt_mgr = app.get_option_manager();
     // show help and exit
     opt_mgr->bind_cmd("-echo", app_option_handler_echo)->set_help_msg("-echo [text]                           echo a message.");
 
-    // setup message handle
+    // setup handle
     app.set_evt_on_recv_msg(app_handle_on_msg);
     app.set_evt_on_send_fail(app_handle_on_send_fail);
     app.set_evt_on_app_connected(app_handle_on_connected);
