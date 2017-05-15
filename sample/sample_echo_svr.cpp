@@ -9,8 +9,8 @@
 #include <uv.h>
 
 #include <atframe/atapp.h>
-#include <time/time_utility.h>
 #include <common/file_system.h>
+#include <time/time_utility.h>
 
 
 class echo_module : public atapp::module_impl {
@@ -81,7 +81,7 @@ struct app_command_handler_transfer {
 
 struct app_command_handler_listen {
     atapp::app *app_;
-    app_command_handler_listen(atapp::app &a) : app_(&a) {}
+    explicit app_command_handler_listen(atapp::app &a) : app_(&a) {}
 
     int operator()(util::cli::callback_param params) {
         if (params.get_params_number() < 1) {
@@ -95,7 +95,7 @@ struct app_command_handler_listen {
 
 struct app_command_handler_connect {
     atapp::app *app_;
-    app_command_handler_connect(atapp::app &a) : app_(&a) {}
+    explicit app_command_handler_connect(atapp::app &a) : app_(&a) {}
 
     int operator()(util::cli::callback_param params) {
         if (params.get_params_number() < 1) {
