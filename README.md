@@ -17,10 +17,10 @@ Gitter
 
 + 支持c++0x或c++11的编译器(为了代码尽量简洁,特别是少做无意义的平台兼容，依赖部分 C11和C++11的功能，所以不支持过低版本的编译器)
 > + GCC: 4.4 及以上（建议gcc 4.8.1及以上）
-> + Clang: 3.4 及以上
+> + Clang: 3.7 及以上
 > + VC: 12 及以上 （建议VC 14及以上）
 
-+ [cmake](https://cmake.org/download/) 3.4.0 以上
++ [cmake](https://cmake.org/download/) 3.7.0 以上
 + [msgpack](https://github.com/msgpack/msgpack-c)（用于协议打解包,仅使用头文件）
 + [libuv](http://libuv.org/)（用于网络通道）
 + [atframe_utils](https://github.com/atframework/atframe_utils)（基础公共代码）
