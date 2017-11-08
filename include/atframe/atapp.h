@@ -53,7 +53,7 @@ namespace atapp {
         // return > 0 means busy and will enter tick again as soon as possiable
         typedef std::function<int()> tick_handler_t;
         // parameters is (message head, buffer address, buffer size)
-        typedef std::function<int(const msg_t&, const void *, size_t)> msg_handler_t;
+        typedef std::function<int(const msg_t &, const void *, size_t)> msg_handler_t;
 
         struct timer_info_t {
             bool is_activited;
@@ -70,7 +70,7 @@ namespace atapp {
         };
 
 
-        typedef std::function<int(app &, const msg_t&, const void *, size_t)> callback_fn_on_msg_t;
+        typedef std::function<int(app &, const msg_t &, const void *, size_t)> callback_fn_on_msg_t;
         typedef std::function<int(app &, app_id_t src_pd, app_id_t dst_pd, const atbus::protocol::msg &m)> callback_fn_on_send_fail_t;
         typedef std::function<int(app &, atbus::endpoint &, int)> callback_fn_on_connected_t;
         typedef std::function<int(app &, atbus::endpoint &, int)> callback_fn_on_disconnected_t;
@@ -120,8 +120,8 @@ namespace atapp {
         atbus::node::ptr_t get_bus_node();
         const atbus::node::ptr_t get_bus_node() const;
 
-        util::config::ini_loader& get_configure();
-        const util::config::ini_loader& get_configure() const;
+        util::config::ini_loader &get_configure();
+        const util::config::ini_loader &get_configure() const;
 
         void set_evt_on_recv_msg(callback_fn_on_msg_t fn);
         void set_evt_on_send_fail(callback_fn_on_send_fail_t fn);
@@ -164,7 +164,7 @@ namespace atapp {
         void print_help();
         // ============ inner functional handlers ============
     private:
-        int prog_option_handler_help(util::cli::callback_param params, util::cli::cmd_option *opt_mgr, util::cli::cmd_option_ci* cmd_mgr);
+        int prog_option_handler_help(util::cli::callback_param params, util::cli::cmd_option *opt_mgr, util::cli::cmd_option_ci *cmd_mgr);
         int prog_option_handler_version(util::cli::callback_param params);
         int prog_option_handler_set_id(util::cli::callback_param params);
         int prog_option_handler_set_conf_file(util::cli::callback_param params);
@@ -181,10 +181,8 @@ namespace atapp {
         int command_handler_invalid(util::cli::callback_param params);
 
     private:
-        int bus_evt_callback_on_recv_msg(const atbus::node &, const atbus::endpoint *, const atbus::connection *,
-                                         const msg_t &, const void *, size_t);
-        int bus_evt_callback_on_send_failed(const atbus::node &, const atbus::endpoint *, const atbus::connection *,
-                                            const atbus::protocol::msg *m);
+        int bus_evt_callback_on_recv_msg(const atbus::node &, const atbus::endpoint *, const atbus::connection *, const msg_t &, const void *, size_t);
+        int bus_evt_callback_on_send_failed(const atbus::node &, const atbus::endpoint *, const atbus::connection *, const atbus::protocol::msg *m);
         int bus_evt_callback_on_error(const atbus::node &, const atbus::endpoint *, const atbus::connection *, int, int);
         int bus_evt_callback_on_reg(const atbus::node &, const atbus::endpoint *, const atbus::connection *, int);
         int bus_evt_callback_on_shutdown(const atbus::node &, int);
@@ -214,8 +212,7 @@ namespace atapp {
         tick_timer_t tick_timer_;
 
         std::vector<module_ptr_t> modules_;
-        std::map<std::string, log_sink_maker::log_reg_t>
-            log_reg_; // log reg will not changed or be checked outside the init, so std::map is enough
+        std::map<std::string, log_sink_maker::log_reg_t> log_reg_; // log reg will not changed or be checked outside the init, so std::map is enough
 
         // callbacks
         callback_fn_on_msg_t evt_on_recv_msg_;
@@ -223,7 +220,14 @@ namespace atapp {
         callback_fn_on_connected_t evt_on_app_connected_;
         callback_fn_on_disconnected_t evt_on_app_disconnected_;
         callback_fn_on_all_module_inited_t evt_on_all_module_inited_;
+
+        // stat
+        typedef struct {
+            uv_rusage_t last_checkpoint_usage;
+            time_t last_checkpoint_min;
+        } stat_data_t;
+        stat_data_t stat_;
     };
-}
+} // namespace atapp
 
 #endif

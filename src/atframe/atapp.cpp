@@ -4,6 +4,7 @@
 #include <signal.h>
 
 #include "std/foreach.h"
+#include "std/static_assert.h"
 
 #include "atframe/atapp.h"
 
@@ -27,6 +28,8 @@ namespace atapp {
 
         tick_timer_.tick_timer.is_activited = false;
         tick_timer_.timeout_timer.is_activited = false;
+
+        stat_.last_checkpoint_min = 0;
     }
 
     app::~app() {
@@ -281,9 +284,37 @@ namespace atapp {
         } while (active_count > 0 && (end_tp - start_tp) >= std::chrono::milliseconds(conf_.tick_interval));
 
         // if is stoping, quit loop  every tick
-        if(check_flag(flag_t::STOPING) && bus_node_) {
+        if (check_flag(flag_t::STOPING) && bus_node_) {
             uv_stop(bus_node_->get_evloop());
         }
+
+        // stat log
+        do {
+            time_t now_min = util::time::time_utility::get_now() / util::time::time_utility::MINITE_SECONDS;
+            if (now_min != stat_.last_checkpoint_min) {
+                time_t last_min = stat_.last_checkpoint_min;
+                stat_.last_checkpoint_min = now_min;
+                if (last_min + 1 == now_min) {
+                    uv_rusage_t last_usage;
+                    memcpy(&last_usage, &stat_.last_checkpoint_usage, sizeof(uv_rusage_t));
+                    if (0 != uv_getrusage(&stat_.last_checkpoint_usage)) {
+                        break;
+                    }
+                    long offset_usr = stat_.last_checkpoint_usage.ru_utime.tv_sec - last_usage.ru_utime.tv_sec;
+                    long offset_sys = stat_.last_checkpoint_usage.ru_stime.tv_sec - last_usage.ru_stime.tv_sec;
+                    offset_usr *= 1000000;
+                    offset_sys *= 1000000;
+                    offset_usr += stat_.last_checkpoint_usage.ru_utime.tv_usec - last_usage.ru_utime.tv_usec;
+                    offset_sys += stat_.last_checkpoint_usage.ru_stime.tv_usec - last_usage.ru_stime.tv_usec;
+                    WLOGINFO("[STAT]: atapp CPU usage: user %04f%%, sys %04f%%",
+                             offset_usr / (util::time::time_utility::MINITE_SECONDS * 10000.0f), // usec and add %
+                             offset_sys / (util::time::time_utility::MINITE_SECONDS * 10000.0f)  // usec and add %
+                    );
+                } else {
+                    uv_getrusage(&stat_.last_checkpoint_usage);
+                }
+            }
+        } while (false);
         return 0;
     }
 
@@ -1319,4 +1350,4 @@ namespace atapp {
         }
         return ret;
     }
-}
+} // namespace atapp
