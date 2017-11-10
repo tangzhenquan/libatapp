@@ -306,7 +306,7 @@ namespace atapp {
                     offset_sys *= 1000000;
                     offset_usr += stat_.last_checkpoint_usage.ru_utime.tv_usec - last_usage.ru_utime.tv_usec;
                     offset_sys += stat_.last_checkpoint_usage.ru_stime.tv_usec - last_usage.ru_stime.tv_usec;
-                    WLOGINFO("[STAT]: atapp CPU usage: user %04f%%, sys %04f%%",
+                    WLOGINFO("[STAT]: atapp CPU usage: user %02.03f%%, sys %02.03f%%",
                              offset_usr / (util::time::time_utility::MINITE_SECONDS * 10000.0f), // usec and add %
                              offset_sys / (util::time::time_utility::MINITE_SECONDS * 10000.0f)  // usec and add %
                     );
