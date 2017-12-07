@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "config/compiler_features.h"
 #include "std/explicit_declare.h"
 #include "std/smart_ptr.h"
 
@@ -21,8 +22,8 @@ namespace atapp {
         ~module_impl();
 
     private:
-        module_impl(const module_impl &) FUNC_DELETE;
-        const module_impl &operator=(const module_impl &) FUNC_DELETE;
+        module_impl(const module_impl &) UTIL_CONFIG_DELETED_FUNCTION;
+        const module_impl &operator=(const module_impl &) UTIL_CONFIG_DELETED_FUNCTION;
 
     public:
         virtual int init() = 0;
@@ -71,6 +72,6 @@ namespace atapp {
 
         friend class app;
     };
-}
+} // namespace atapp
 
 #endif
