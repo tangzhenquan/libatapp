@@ -596,7 +596,9 @@ namespace atapp {
             log_cat_number = LOG_WRAPPER_CATEGORIZE_SIZE;
         }
         int log_level_id = util::log::log_wrapper::level_t::LOG_LW_INFO;
-        cfg_loader_.dump_to("atapp.log.level", log_level_id);
+        std::string log_level_name;
+        cfg_loader_.dump_to("atapp.log.level", log_level_name);
+        log_level_id = util::log::log_formatter::get_level_by_name(log_level_name.c_str());
 
         char log_path[256] = {0};
 
@@ -639,10 +641,14 @@ namespace atapp {
                 util::config::ini_value &cfg_set = cfg_loader_.get_node(log_path);
 
                 UTIL_STRFUNC_SNPRINTF(log_path, sizeof(log_path), "atapp.log.%s.%u.level.min", log_name.c_str(), j);
-                cfg_loader_.dump_to(log_path, log_handle_min);
+                log_level_name.clear();
+                cfg_loader_.dump_to(log_path, log_level_name);
+                log_handle_min = util::log::log_formatter::get_level_by_name(log_level_name.c_str());
 
                 UTIL_STRFUNC_SNPRINTF(log_path, sizeof(log_path), "atapp.log.%s.%u.level.max", log_name.c_str(), j);
-                cfg_loader_.dump_to(log_path, log_handle_max);
+                log_level_name.clear();
+                cfg_loader_.dump_to(log_path, log_level_name);
+                log_handle_max = util::log::log_formatter::get_level_by_name(log_level_name.c_str());
 
                 // register log sink
                 std::map<std::string, log_sink_maker::log_reg_t>::iterator iter = log_reg_.find(sink_type);
