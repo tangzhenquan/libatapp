@@ -16,6 +16,13 @@ if ( NOT MSVC AND NOT APPLE )
 endif()
 
 # ============ libatbus - src ============
+# 保持和MSVC得导出行为一致
+if( ${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
+    add_definitions(-fvisibility=hidden)
+elseif( ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+    add_definitions(-fvisibility=hidden)
+endif()
+
 add_library(${PROJECT_BINDING_NAME} SHARED ${BINDING_SRC_LIST} ${PROJECT_3RD_PARTY_SRC_LIST})
 
 target_link_libraries(${PROJECT_BINDING_NAME}
@@ -35,4 +42,8 @@ install(TARGETS ${PROJECT_BINDING_NAME}
 
 install(FILES ${CMAKE_CURRENT_LIST_DIR}/atframe/libatapp_c.h
     DESTINATION include/atframe
+)
+
+install(FILES "${3RD_PARTY_ATFRAME_UTILS_INC_DIR}/config/compile_optimize.h"
+    DESTINATION include/atframe/config
 )
