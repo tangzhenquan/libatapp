@@ -603,7 +603,7 @@ namespace atapp {
         char log_path[256] = {0};
 
         for (uint32_t i = 0; i < log_cat_number; ++i) {
-            std::string log_name, log_prefix;
+            std::string log_name, log_prefix, log_stacktrace_min, log_stacktrace_max;
             UTIL_STRFUNC_SNPRINTF(log_path, sizeof(log_path), "atapp.log.cat.%u.name", i);
             cfg_loader_.dump_to(log_path, log_name);
 
@@ -614,10 +614,34 @@ namespace atapp {
             UTIL_STRFUNC_SNPRINTF(log_path, sizeof(log_path), "atapp.log.cat.%u.prefix", i);
             cfg_loader_.dump_to(log_path, log_prefix);
 
+            UTIL_STRFUNC_SNPRINTF(log_path, sizeof(log_path), "atapp.log.cat.%u.stacktrace.min", i);
+            cfg_loader_.dump_to(log_path, log_stacktrace_min);
+
+            UTIL_STRFUNC_SNPRINTF(log_path, sizeof(log_path), "atapp.log.cat.%u.stacktrace.max", i);
+            cfg_loader_.dump_to(log_path, log_stacktrace_max);
+
             // init and set prefix
-            WLOG_INIT(i, WLOG_LEVELID(log_level_id));
+            if (0 != (WLOG_INIT(i, WLOG_LEVELID(log_level_id)))) {
+                ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "log init " << log_name << "(" << i << ") failed, skipped." << std::endl;
+                continue;
+            }
             if (!log_prefix.empty()) {
                 WLOG_GETCAT(i)->set_prefix_format(log_prefix);
+            }
+
+            // load stacktrace configure
+            if (!log_stacktrace_min.empty() || !log_stacktrace_max.empty()) {
+                util::log::log_formatter::level_t::type stacktrace_level_min = util::log::log_formatter::level_t::LOG_LW_DISABLED;
+                util::log::log_formatter::level_t::type stacktrace_level_max = util::log::log_formatter::level_t::LOG_LW_DISABLED;
+                if (!log_stacktrace_min.empty()) {
+                    stacktrace_level_min = util::log::log_formatter::get_level_by_name(log_stacktrace_min.c_str());
+                }
+
+                if (!log_stacktrace_max.empty()) {
+                    stacktrace_level_max = util::log::log_formatter::get_level_by_name(log_stacktrace_max.c_str());
+                }
+
+                WLOG_GETCAT(i)->set_stacktrace_level(stacktrace_level_max, stacktrace_level_min);
             }
 
             // FIXME: For now, log can not be reload. we may make it available someday in the future
