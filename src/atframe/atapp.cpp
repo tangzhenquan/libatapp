@@ -99,12 +99,14 @@ namespace atapp {
         ret = setup_log();
         if (ret < 0) {
             ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "setup log failed" << std::endl;
+            write_pidfile();
             return ret;
         }
 
         ret = setup_signal();
         if (ret < 0) {
             ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "setup signal failed" << std::endl;
+            write_pidfile();
             return ret;
         }
 
@@ -112,6 +114,7 @@ namespace atapp {
         if (ret < 0) {
             ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "setup atbus failed" << std::endl;
             bus_node_.reset();
+            write_pidfile();
             return ret;
         }
 
@@ -121,6 +124,7 @@ namespace atapp {
                 ret = mod->reload();
                 if (ret < 0) {
                     ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "load configure of " << mod->name() << " failed" << std::endl;
+                    write_pidfile();
                     return ret;
                 }
             }
@@ -132,6 +136,7 @@ namespace atapp {
                 ret = mod->init();
                 if (ret < 0) {
                     ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "initialze " << mod->name() << " failed" << std::endl;
+                    write_pidfile();
                     return ret;
                 }
             }
@@ -459,31 +464,18 @@ namespace atapp {
     }
 
     int app::run_ev_loop(atbus::adapter::loop_t *ev_loop) {
-        bool keep_running = true;
         util::cli::shell_stream ss(std::cerr);
 
         set_flag(flag_t::RUNNING, true);
+
+        // write pid file
+        bool keep_running = write_pidfile();
 
         // TODO if atbus is reset, init it again
 
         if (setup_timer() < 0) {
             set_flag(flag_t::RUNNING, false);
             return -1;
-        }
-
-        // write pid file
-        if (!conf_.pid_file.empty()) {
-            std::fstream pid_file;
-            pid_file.open(conf_.pid_file.c_str(), std::ios::out);
-            if (!pid_file.is_open()) {
-                ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "open and write pif file " << conf_.pid_file << " failed" << std::endl;
-
-                // failed and skip running
-                keep_running = false;
-            } else {
-                pid_file << atbus::node::get_pid();
-                pid_file.close();
-            }
         }
 
         while (keep_running && bus_node_) {
@@ -853,6 +845,25 @@ namespace atapp {
         }
 
         return 0;
+    }
+
+    bool app::write_pidfile() {
+        if (!conf_.pid_file.empty()) {
+            std::fstream pid_file;
+            pid_file.open(conf_.pid_file.c_str(), std::ios::out);
+            if (!pid_file.is_open()) {
+                util::cli::shell_stream ss(std::cerr);
+                ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "open and write pid file " << conf_.pid_file << " failed" << std::endl;
+
+                // failed and skip running
+                return false;
+            } else {
+                pid_file << atbus::node::get_pid();
+                pid_file.close();
+            }
+        }
+
+        return true;
     }
 
     void app::print_help() {

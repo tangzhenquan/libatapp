@@ -161,6 +161,7 @@ namespace atapp {
 
         int send_last_command(atbus::adapter::loop_t *ev_loop);
 
+        bool write_pidfile();
         void print_help();
         // ============ inner functional handlers ============
     private:
