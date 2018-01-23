@@ -41,6 +41,11 @@ namespace atapp {
                 file_sink.set_auto_flush(auto_flush);
             }
 
+            if (ini_cfg.get_children().end() != ini_cfg.get_children().find("flush_interval")) {
+                util::config::duration_value flush_interval = ini_cfg["flush_interval"].as_duration();
+                file_sink.set_flush_interval(flush_interval.sec);
+            }
+
             return file_sink;
         }
 
