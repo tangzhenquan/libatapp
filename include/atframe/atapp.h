@@ -163,6 +163,8 @@ namespace atapp {
 
         bool write_pidfile();
         void print_help();
+
+        const std::string &get_build_version() const;
         // ============ inner functional handlers ============
     private:
         int prog_option_handler_help(util::cli::callback_param params, util::cli::cmd_option *opt_mgr, util::cli::cmd_option_ci *cmd_mgr);
@@ -206,6 +208,7 @@ namespace atapp {
         std::vector<std::string> last_command_;
 
         app_conf conf_;
+        mutable std::string build_version_;
 
         atbus::node::ptr_t bus_node_;
         std::bitset<flag_t::FLAG_MAX> flags_;

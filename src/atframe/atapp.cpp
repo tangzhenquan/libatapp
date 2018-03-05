@@ -1,7 +1,11 @@
 ﻿#include <assert.h>
-#include <fstream>
-#include <iostream>
 #include <signal.h>
+
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+
 
 #include "std/foreach.h"
 #include "std/static_assert.h"
@@ -878,6 +882,83 @@ namespace atapp {
         shls() << get_command_manager()->get_help_msg() << std::endl;
     }
 
+    const std::string &app::get_build_version() const {
+        if (build_version_.empty()) {
+            std::stringstream ss;
+            if (get_app_version().empty()) {
+                ss << "1.0.0.0 - based on libatapp " << LIBATAPP_VERSION << std::endl;
+            } else {
+                ss << get_app_version() << " - based on libatapp " << LIBATAPP_VERSION << std::endl;
+            }
+
+            const size_t key_padding = 20;
+
+#ifdef __DATE__
+            ss << std::setw(key_padding) << "Build Time: " << __DATE__;
+#ifdef __TIME__
+            ss << " " << __TIME__;
+#endif
+            ss << std::endl;
+#endif
+
+
+#if defined(PROJECT_SCM_VERSION) || defined(PROJECT_SCM_NAME) || defined(PROJECT_SCM_BRANCH)
+            ss << std::setw(key_padding) << "Build SCM:";
+#ifdef PROJECT_SCM_NAME
+            ss << " " << PROJECT_SCM_NAME;
+#endif
+#ifdef PROJECT_SCM_BRANCH
+            ss << " branch " << PROJECT_SCM_BRANCH;
+#endif
+#ifdef PROJECT_SCM_VERSION
+            ss << " commit " << PROJECT_SCM_VERSION;
+#endif
+#endif
+
+#if defined(_MSC_VER)
+            ss << std::setw(key_padding) << "Build Compiler: MSVC ";
+#ifdef _MSC_FULL_VER
+            ss << _MSC_FULL_VER;
+#else
+            ss << _MSC_VER;
+#endif
+
+#ifdef _MSVC_LANG
+            ss << " with standard " << _MSVC_LANG;
+#endif
+            ss << std::endl;
+
+#elif defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
+            ss << std::setw(key_padding) << "Build Compiler: ";
+#if defined(__clang__)
+            ss << "clang";
+#else
+            ss << "gcc";
+#endif
+
+#if defined(__clang_version__)
+            ss << __clang_version__;
+#elif defined(__VERSION__)
+            ss << __VERSION__;
+#endif
+#if defined(__OPTIMIZE__)
+            ss << " optimize level " << __OPTIMIZE__;
+#endif
+#if defined(__STDC_VERSION__)
+            ss << " C standard " << __STDC_VERSION__;
+#endif
+#if defined(__cplusplus) && __cplusplus > 1
+            ss << " C++ standard " << __cplusplus;
+#endif
+            ss << std::endl;
+#endif
+
+            build_version_ = ss.str();
+        }
+
+        return build_version_;
+    }
+
     int app::prog_option_handler_help(util::cli::callback_param params, util::cli::cmd_option *opt_mgr, util::cli::cmd_option_ci *cmd_mgr) {
         assert(opt_mgr);
         mode_ = mode_t::INFO;
@@ -895,11 +976,7 @@ namespace atapp {
 
     int app::prog_option_handler_version(util::cli::callback_param params) {
         mode_ = mode_t::INFO;
-        if (get_app_version().empty()) {
-            printf("1.0.0.0 - based on libatapp %s\n", LIBATAPP_VERSION);
-        } else {
-            printf("%s - based on libatapp %s\n", get_app_version().c_str(), LIBATAPP_VERSION);
-        }
+        printf("%s", get_build_version());
         return 0;
     }
 
