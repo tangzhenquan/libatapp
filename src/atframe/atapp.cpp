@@ -976,7 +976,7 @@ namespace atapp {
 
     int app::prog_option_handler_version(util::cli::callback_param params) {
         mode_ = mode_t::INFO;
-        printf("%s", get_build_version());
+        printf("%s", get_build_version().c_str());
         return 0;
     }
 
