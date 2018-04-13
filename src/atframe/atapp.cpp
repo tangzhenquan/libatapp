@@ -12,7 +12,9 @@
 
 #include "atframe/atapp.h"
 
-#include "common/string_oprs.h"
+#include <common/file_system.h>
+#include <common/string_oprs.h>
+
 
 #include "cli/shell_font.h"
 
@@ -541,6 +543,8 @@ namespace atapp {
         // not running now
         set_flag(flag_t::RUNNING, false);
 
+        // cleanup pid file
+        cleanup_pidfile();
         return 0;
     }
 
@@ -864,6 +868,37 @@ namespace atapp {
             } else {
                 pid_file << atbus::node::get_pid();
                 pid_file.close();
+            }
+        }
+
+        return true;
+    }
+
+    bool app::cleanup_pidfile() {
+        if (!conf_.pid_file.empty()) {
+            std::fstream pid_file;
+
+            pid_file.open(conf_.pid_file.c_str(), std::ios::in);
+            if (!pid_file.is_open()) {
+                util::cli::shell_stream ss(std::cerr);
+                ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "try to remove pid file " << conf_.pid_file << " failed" << std::endl;
+
+                // failed and skip running
+                return false;
+            } else {
+                int pid = 0;
+                pid_file >> pid;
+                pid_file.close();
+
+                if (pid != atbus::node::get_pid()) {
+                    util::cli::shell_stream ss(std::cerr);
+                    ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_YELLOW << "skip remove pid file " << conf_.pid_file << ". because it has pid " << pid
+                         << ", but our pid is" << atbus::node::get_pid() << std::endl;
+
+                    return false;
+                } else {
+                    return util::file_system::remove(conf_.pid_file.c_str());
+                }
             }
         }
 
@@ -1378,7 +1413,8 @@ namespace atapp {
         atbus::endpoint *ep = NULL;
         if (is_sync_channel) {
             // preallocate endpoint when using shared memory channel, because this channel can not be connected without endpoint
-            atbus::endpoint::ptr_t new_ep = atbus::endpoint::create(bus_node_.get(), conf_.id, conf_.bus_conf.children_mask, 0, "");
+            atbus::endpoint::ptr_t new_ep =
+                atbus::endpoint::create(bus_node_.get(), conf_.id, conf_.bus_conf.children_mask, bus_node_->get_pid(), bus_node_->get_hostname());
             ret = bus_node_->add_endpoint(new_ep);
             if (ret < 0) {
                 ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "connect to " << use_addr.address << " failed. ret: " << ret << std::endl;
@@ -1440,6 +1476,7 @@ namespace atapp {
 
         ret = bus_node_->send_custom_cmd(ep->get_id(), &arr_buff[0], &arr_size[0], last_command_.size());
         if (ret < 0) {
+            close_timer(tick_timer_.timeout_timer);
             ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "send command failed. ret: " << ret << std::endl;
             return ret;
         }

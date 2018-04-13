@@ -162,6 +162,7 @@ namespace atapp {
         int send_last_command(atbus::adapter::loop_t *ev_loop);
 
         bool write_pidfile();
+        bool cleanup_pidfile();
         void print_help();
 
         const std::string &get_build_version() const;
