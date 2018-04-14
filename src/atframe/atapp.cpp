@@ -902,7 +902,7 @@ namespace atapp {
                 if (pid != atbus::node::get_pid()) {
                     util::cli::shell_stream ss(std::cerr);
                     ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_YELLOW << "skip remove pid file " << conf_.pid_file << ". because it has pid " << pid
-                         << ", but our pid is" << atbus::node::get_pid() << std::endl;
+                         << ", but our pid is " << atbus::node::get_pid() << std::endl;
 
                     return false;
                 } else {
