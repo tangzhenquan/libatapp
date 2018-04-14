@@ -709,6 +709,35 @@ namespace atapp {
             return -1;
         }
 
+        // setup all callbacks
+        connection_node->set_on_recv_handle(std::bind(&app::bus_evt_callback_on_recv_msg, this, std::placeholders::_1, std::placeholders::_2,
+                                                      std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
+
+        connection_node->set_on_send_data_failed_handle(
+            std::bind(&app::bus_evt_callback_on_send_failed, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+
+        connection_node->set_on_error_handle(std::bind(&app::bus_evt_callback_on_error, this, std::placeholders::_1, std::placeholders::_2,
+                                                       std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
+
+        connection_node->set_on_register_handle(
+            std::bind(&app::bus_evt_callback_on_reg, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+
+        connection_node->set_on_shutdown_handle(std::bind(&app::bus_evt_callback_on_shutdown, this, std::placeholders::_1, std::placeholders::_2));
+
+        connection_node->set_on_available_handle(std::bind(&app::bus_evt_callback_on_available, this, std::placeholders::_1, std::placeholders::_2));
+
+        connection_node->set_on_invalid_connection_handle(
+            std::bind(&app::bus_evt_callback_on_invalid_connection, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+
+        connection_node->set_on_custom_cmd_handle(std::bind(&app::bus_evt_callback_on_custom_cmd, this, std::placeholders::_1, std::placeholders::_2,
+                                                            std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
+        connection_node->set_on_add_endpoint_handle(
+            std::bind(&app::bus_evt_callback_on_add_endpoint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+
+        connection_node->set_on_remove_endpoint_handle(
+            std::bind(&app::bus_evt_callback_on_remove_endpoint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+
+
         // TODO if not in resume mode, destroy shm
         // if (false == conf_.resume_mode) {}
 
@@ -729,6 +758,14 @@ namespace atapp {
                 } else {
 #endif
                     WLOGERROR("bus node listen %s failed. res: %d", conf_.bus_listen[i].c_str(), res);
+                    if (EN_ATBUS_ERR_PIPE_ADDR_TOO_LONG == res) {
+                        atbus::channel::channel_address_t address;
+                        atbus::channel::make_address(conf_.bus_listen[i].c_str(), address);
+                        std::string abs_path = util::file_system::get_abs_path(address.host.c_str());
+                        WLOGERROR("listen pipe socket %s, but the length (%llu) exceed the limit %llu", abs_path.c_str(),
+                                  static_cast<unsigned long long>(abs_path.size()),
+                                  static_cast<unsigned long long>(atbus::channel::io_stream_get_max_unix_socket_length()));
+                    }
                     ret = res;
 #ifdef _WIN32
                 }
@@ -782,34 +819,6 @@ namespace atapp {
                 }
             }
         }
-
-        // setup all callbacks
-        connection_node->set_on_recv_handle(std::bind(&app::bus_evt_callback_on_recv_msg, this, std::placeholders::_1, std::placeholders::_2,
-                                                      std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
-
-        connection_node->set_on_send_data_failed_handle(
-            std::bind(&app::bus_evt_callback_on_send_failed, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
-
-        connection_node->set_on_error_handle(std::bind(&app::bus_evt_callback_on_error, this, std::placeholders::_1, std::placeholders::_2,
-                                                       std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
-
-        connection_node->set_on_register_handle(
-            std::bind(&app::bus_evt_callback_on_reg, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
-
-        connection_node->set_on_shutdown_handle(std::bind(&app::bus_evt_callback_on_shutdown, this, std::placeholders::_1, std::placeholders::_2));
-
-        connection_node->set_on_available_handle(std::bind(&app::bus_evt_callback_on_available, this, std::placeholders::_1, std::placeholders::_2));
-
-        connection_node->set_on_invalid_connection_handle(
-            std::bind(&app::bus_evt_callback_on_invalid_connection, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-
-        connection_node->set_on_custom_cmd_handle(std::bind(&app::bus_evt_callback_on_custom_cmd, this, std::placeholders::_1, std::placeholders::_2,
-                                                            std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
-        connection_node->set_on_add_endpoint_handle(
-            std::bind(&app::bus_evt_callback_on_add_endpoint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-
-        connection_node->set_on_remove_endpoint_handle(
-            std::bind(&app::bus_evt_callback_on_remove_endpoint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
         bus_node_ = connection_node;
 
