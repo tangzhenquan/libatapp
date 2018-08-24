@@ -730,7 +730,7 @@ namespace atapp {
             std::bind(&app::bus_evt_callback_on_invalid_connection, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
         connection_node->set_on_custom_cmd_handle(std::bind(&app::bus_evt_callback_on_custom_cmd, this, std::placeholders::_1, std::placeholders::_2,
-                                                            std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
+                                                            std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
         connection_node->set_on_add_endpoint_handle(
             std::bind(&app::bus_evt_callback_on_add_endpoint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
@@ -1003,6 +1003,27 @@ namespace atapp {
         return build_version_;
     }
 
+    app::custom_command_sender_t app::get_custom_command_sender(util::cli::callback_param params) {
+        custom_command_sender_t ret;
+        ret.self = NULL;
+        ret.response = NULL;
+        if (NULL != params.get_ext_param()) {
+            ret = *reinterpret_cast<custom_command_sender_t *>(params.get_ext_param());
+        }
+
+        return ret;
+    }
+
+    bool app::add_custom_command_rsp(util::cli::callback_param params, const std::string &rsp_text) {
+        custom_command_sender_t sender = get_custom_command_sender(params);
+        if (NULL == sender.response) {
+            return false;
+        }
+
+        sender.response->push_back(rsp_text);
+        return true;
+    }
+
     int app::prog_option_handler_help(util::cli::callback_param params, util::cli::cmd_option *opt_mgr, util::cli::cmd_option_ci *cmd_mgr) {
         assert(opt_mgr);
         mode_ = mode_t::INFO;
@@ -1141,22 +1162,32 @@ namespace atapp {
     }
 
     int app::app::command_handler_start(util::cli::callback_param params) {
+        // add_custom_command_rsp(params, "success");
         // do nothing
         return 0;
     }
 
     int app::command_handler_stop(util::cli::callback_param params) {
-        WLOGINFO("app node 0x%llx run stop command", static_cast<unsigned long long>(get_id()));
+        char msg[256] = {0};
+        UTIL_STRFUNC_SNPRINTF(msg, sizeof(msg), "app node 0x%llx run stop command success", static_cast<unsigned long long>(get_id()));
+        WLOGINFO("%s", msg);
+        add_custom_command_rsp(params, msg);
         return stop();
     }
 
     int app::command_handler_reload(util::cli::callback_param params) {
-        WLOGINFO("app node 0x%llx run reload command", static_cast<unsigned long long>(get_id()));
+        char msg[256] = {0};
+        UTIL_STRFUNC_SNPRINTF(msg, sizeof(msg), "app node 0x%llx run reload command success", static_cast<unsigned long long>(get_id()));
+        WLOGINFO("%s", msg);
+        add_custom_command_rsp(params, msg);
         return reload();
     }
 
     int app::command_handler_invalid(util::cli::callback_param params) {
-        WLOGERROR("receive invalid command %s", params.get("@Cmd")->to_string());
+        char msg[256] = {0};
+        UTIL_STRFUNC_SNPRINTF(msg, sizeof(msg), "receive invalid command %s", params.get("@Cmd")->to_string());
+        WLOGERROR("%s", msg);
+        add_custom_command_rsp(params, msg);
         return 0;
     }
 
@@ -1177,8 +1208,9 @@ namespace atapp {
             return -1;
         }
 
-        WLOGERROR("app 0x%llx receive a send failure from 0x%llx, message cmd: %d, type: %d, ret: %d, sequence: %u", static_cast<unsigned long long>(get_id()),
-                  static_cast<unsigned long long>(m->head.src_bus_id), static_cast<int>(m->head.cmd), m->head.type, m->head.ret, m->head.sequence);
+        WLOGERROR("app 0x%llx receive a send failure from 0x%llx, message cmd: %d, type: %d, ret: %d, sequence: %llu",
+                  static_cast<unsigned long long>(get_id()), static_cast<unsigned long long>(m->head.src_bus_id), static_cast<int>(m->head.cmd), m->head.type,
+                  m->head.ret, static_cast<unsigned long long>(m->head.sequence));
 
         if ((ATBUS_CMD_DATA_TRANSFORM_REQ == m->head.cmd || ATBUS_CMD_DATA_TRANSFORM_RSP == m->head.cmd) && evt_on_send_fail_) {
             app_id_t origin_from = m->body.forward->to;
@@ -1280,7 +1312,7 @@ namespace atapp {
     }
 
     int app::bus_evt_callback_on_custom_cmd(const atbus::node &, const atbus::endpoint *, const atbus::connection *, atbus::node::bus_id_t src_id,
-                                            const std::vector<std::pair<const void *, size_t> > &args) {
+                                            const std::vector<std::pair<const void *, size_t> > &args, std::list<std::string> &rsp) {
         if (args.empty()) {
             return 0;
         }
@@ -1293,7 +1325,10 @@ namespace atapp {
         }
 
         util::cli::cmd_option_ci::ptr_type cmd_mgr = get_command_manager();
-        cmd_mgr->start(args_str, true, this);
+        custom_command_sender_t sender;
+        sender.self = this;
+        sender.response = &rsp;
+        cmd_mgr->start(args_str, true, &sender);
         return 0;
     }
 
@@ -1322,6 +1357,25 @@ namespace atapp {
                 evt_on_app_disconnected_(std::ref(*this), std::ref(*ep), res);
             }
         }
+        return 0;
+    }
+
+    static size_t __g_atapp_custom_cmd_rsp_recv_times = 0;
+    int app::bus_evt_callback_on_custom_rsp(const atbus::node &, const atbus::endpoint *, const atbus::connection *, atbus::node::bus_id_t src_id,
+                                            const std::vector<std::pair<const void *, size_t> > &args, uint64_t seq) {
+        ++__g_atapp_custom_cmd_rsp_recv_times;
+        if (args.empty()) {
+            return 0;
+        }
+
+        util::cli::shell_stream ss(std::cout);
+        char bus_addr[64] = {0};
+        UTIL_STRFUNC_SNPRINTF(bus_addr, sizeof(bus_addr), "0x%llx", static_cast<unsigned long long>(src_id));
+        for (size_t i = 0; i < args.size(); ++i) {
+            std::string text(static_cast<const char *>(args[i].first), args[i].second);
+            ss() << "Custom Command: (" << bus_addr << "): " << text << std::endl;
+        }
+
         return 0;
     }
 
@@ -1483,6 +1537,9 @@ namespace atapp {
             arr_size[i] = last_command_[i].size();
         }
 
+        bus_node_->set_on_custom_rsp_handle(std::bind(&app::bus_evt_callback_on_custom_rsp, this, std::placeholders::_1, std::placeholders::_2,
+                                                      std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
+
         ret = bus_node_->send_custom_cmd(ep->get_id(), &arr_buff[0], &arr_size[0], last_command_.size());
         if (ret < 0) {
             close_timer(tick_timer_.timeout_timer);
@@ -1493,15 +1550,13 @@ namespace atapp {
         // step 6. waiting for send done(for shm, no need to wait, for io_stream fd, waiting write callback)
         if (!is_sync_channel) {
             do {
-                size_t start_times = ep->get_stat_push_start_times();
-                size_t end_times = ep->get_stat_push_success_times() + ep->get_stat_push_failed_times();
-                if (end_times >= start_times) {
+                if (__g_atapp_custom_cmd_rsp_recv_times) {
                     break;
                 }
 
                 uv_run(ev_loop, UV_RUN_ONCE);
                 if (check_flag(flag_t::TIMEOUT)) {
-                    ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "send command timeout" << std::endl;
+                    ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "send command or receive response timeout" << std::endl;
                     ret = -1;
                     break;
                 }

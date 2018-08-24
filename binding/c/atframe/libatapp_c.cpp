@@ -132,7 +132,7 @@ namespace detail {
             }
 
 
-            return (*callee_)(ctx_, &buf_addrs[0], &buf_sz[0], static_cast<uint64_t>(params.get_params_number()), private_data_);
+            return (*callee_)(ctx_, &params, &buf_addrs[0], &buf_sz[0], static_cast<uint64_t>(params.get_params_number()), private_data_);
         }
 
         libatapp_c_context ctx_;
@@ -295,6 +295,14 @@ UTIL_SYMBOL_EXPORT void __cdecl libatapp_c_add_option(libatapp_c_context context
     } else {
         ATAPP_CONTEXT(context)->get_option_manager()->bind_cmd(opt, detail::libatapp_c_on_cmd_option_functor(context, fn, priv_data));
     }
+}
+
+UTIL_SYMBOL_EXPORT void __cdecl libatapp_c_custom_cmd_add_rsp(libatapp_c_custom_cmd_sender sender, const char *rsp, uint64_t rsp_sz) {
+    if (NULL == sender) {
+        return;
+    }
+
+    ::atapp::app::add_custom_command_rsp(*(util::cli::cmd_option_list *)sender, std::string(rsp, rsp_sz));
 }
 
 UTIL_SYMBOL_EXPORT libatapp_c_context __cdecl libatapp_c_create() {

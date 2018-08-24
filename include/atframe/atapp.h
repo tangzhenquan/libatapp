@@ -50,6 +50,11 @@ namespace atapp {
             };
         };
 
+        struct custom_command_sender_t {
+            app *self;
+            std::list<std::string> *response;
+        };
+
         // return > 0 means busy and will enter tick again as soon as possiable
         typedef std::function<int()> tick_handler_t;
         // parameters is (message head, buffer address, buffer size)
@@ -167,6 +172,11 @@ namespace atapp {
 
         const std::string &get_build_version() const;
         // ============ inner functional handlers ============
+
+    public:
+        static custom_command_sender_t get_custom_command_sender(util::cli::callback_param);
+        static bool add_custom_command_rsp(util::cli::callback_param, const std::string &rsp_text);
+
     private:
         int prog_option_handler_help(util::cli::callback_param params, util::cli::cmd_option *opt_mgr, util::cli::cmd_option_ci *cmd_mgr);
         int prog_option_handler_version(util::cli::callback_param params);
@@ -193,9 +203,11 @@ namespace atapp {
         int bus_evt_callback_on_available(const atbus::node &, int);
         int bus_evt_callback_on_invalid_connection(const atbus::node &, const atbus::connection *, int);
         int bus_evt_callback_on_custom_cmd(const atbus::node &, const atbus::endpoint *, const atbus::connection *, atbus::node::bus_id_t,
-                                           const std::vector<std::pair<const void *, size_t> > &);
+                                           const std::vector<std::pair<const void *, size_t> > &, std::list<std::string> &);
         int bus_evt_callback_on_add_endpoint(const atbus::node &, atbus::endpoint *, int);
         int bus_evt_callback_on_remove_endpoint(const atbus::node &, atbus::endpoint *, int);
+        int bus_evt_callback_on_custom_rsp(const atbus::node &, const atbus::endpoint *, const atbus::connection *, atbus::node::bus_id_t,
+                                           const std::vector<std::pair<const void *, size_t> > &, uint64_t);
 
 
         /** this function should always not be used outside atapp.cpp **/

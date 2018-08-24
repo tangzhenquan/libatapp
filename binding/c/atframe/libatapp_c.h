@@ -13,6 +13,7 @@ extern "C" {
 #endif
 
 typedef void *libatapp_c_context;
+typedef void *libatapp_c_custom_cmd_sender;
 
 typedef const void *libatapp_c_message;
 
@@ -44,7 +45,8 @@ typedef int32_t (*libatapp_c_on_send_fail_fn_t)(libatapp_c_context, uint64_t src
 typedef int32_t (*libatapp_c_on_connected_fn_t)(libatapp_c_context, uint64_t pd, int32_t status, void *priv_data);
 typedef int32_t (*libatapp_c_on_disconnected_fn_t)(libatapp_c_context, uint64_t pd, int32_t status, void *priv_data);
 typedef int32_t (*libatapp_c_on_all_module_inited_fn_t)(libatapp_c_context, void *priv_data);
-typedef int32_t (*libatapp_c_on_cmd_option_fn_t)(libatapp_c_context, const char *buffer[], uint64_t buffer_len[], uint64_t sz, void *priv_data);
+typedef int32_t (*libatapp_c_on_cmd_option_fn_t)(libatapp_c_context, libatapp_c_custom_cmd_sender, const char *buffer[], uint64_t buffer_len[], uint64_t sz,
+                                                 void *priv_data);
 
 UTIL_SYMBOL_EXPORT void __cdecl libatapp_c_set_on_msg_fn(libatapp_c_context context, libatapp_c_on_msg_fn_t fn, void *priv_data);
 UTIL_SYMBOL_EXPORT void __cdecl libatapp_c_set_on_send_fail_fn(libatapp_c_context context, libatapp_c_on_send_fail_fn_t fn, void *priv_data);
@@ -55,6 +57,7 @@ UTIL_SYMBOL_EXPORT void __cdecl libatapp_c_add_cmd(libatapp_c_context context, c
                                                    void *priv_data);
 UTIL_SYMBOL_EXPORT void __cdecl libatapp_c_add_option(libatapp_c_context context, const char *opt, libatapp_c_on_cmd_option_fn_t fn, const char *help_msg,
                                                       void *priv_data);
+UTIL_SYMBOL_EXPORT void __cdecl libatapp_c_custom_cmd_add_rsp(libatapp_c_custom_cmd_sender sender, const char *rsp, uint64_t rsp_sz);
 
 
 // =========================== create/destory ===========================

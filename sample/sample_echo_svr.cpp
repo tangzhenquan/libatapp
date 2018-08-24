@@ -56,7 +56,9 @@ static int app_command_handler_echo(util::cli::callback_param params) {
         ss << " " << params[i]->to_cpp_string();
     }
 
+    std::string content = ss.str();
     WLOGINFO("echo commander:%s", ss.str().c_str());
+    ::atapp::app::add_custom_command_rsp(params, std::string("echo: ") + content);
     return 0;
 }
 
