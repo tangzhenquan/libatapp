@@ -3,6 +3,11 @@ cmake_policy(SET CMP0054 NEW)
 
 project(libatapp)
 
+set(LIBATAPP_VERSION_MAJOR "0")
+set(LIBATAPP_VERSION_MINOR "2")
+set(LIBATAPP_VERSION_PATCH "0")
+set(LIBATAPP_VERSION "${LIBATAPP_VERSION_MAJOR}.${LIBATAPP_VERSION_MINOR}.${LIBATAPP_VERSION_PATCH}")
+
 # 准备下载依赖组件
 include ("${CMAKE_CURRENT_LIST_DIR}/3rd_party/atframe_utils/libatframe_utils.prepare.cmake")
 
@@ -26,6 +31,13 @@ include("${PROJECT_CMAKE_MODULE_DIR}/ProjectTools.cmake")
 include("${PROJECT_CMAKE_MODULE_DIR}/CompilerOption.cmake")
 include("${PROJECT_CMAKE_MODULE_DIR}/TargetOption.cmake")
 EchoWithColor(COLOR GREEN "-- Build Type: ${CMAKE_BUILD_TYPE}")
+
+
+configure_file(
+    "${CMAKE_CURRENT_LIST_DIR}/include/atframe/atapp_version.h.in"
+    "${CMAKE_CURRENT_LIST_DIR}/include/atframe/atapp_version.h"
+    @ONLY
+)
 
 ########################################################################
 # 导入项目配置

@@ -12,9 +12,9 @@
 
 #include "atframe/atapp.h"
 
+#include <algorithm/murmur_hash.h>
 #include <common/file_system.h>
 #include <common/string_oprs.h>
-
 
 #include "cli/shell_font.h"
 
@@ -370,8 +370,28 @@ namespace atapp {
 
     const std::string &app::get_app_version() const { return conf_.app_version; }
 
+    const std::string &app::get_app_name() const { return conf_.name; }
+
+    const std::string &app::get_type_name() const { return conf_.type_name; }
+
+    app::app_id_t app::get_type_id() const { return conf_.type_id; }
+
+    const std::string &app::get_hash_code() const { return conf_.hash_code; }
+
     atbus::node::ptr_t app::get_bus_node() { return bus_node_; }
     const atbus::node::ptr_t app::get_bus_node() const { return bus_node_; }
+
+    bool app::is_remote_address_available(const std::string &hostname, const std::string &address) const {
+        if (0 == UTIL_STRFUNC_STRNCASE_CMP("mem:", address.c_str(), 4)) {
+            return false;
+        }
+
+        if (0 == UTIL_STRFUNC_STRNCASE_CMP("shm:", address.c_str(), 4) || 0 == UTIL_STRFUNC_STRNCASE_CMP("unix:", address.c_str(), 5)) {
+            return hostname == ::atbus::node::get_hostname();
+        }
+
+        return true;
+    }
 
     util::config::ini_loader &app::get_configure() { return cfg_loader_; }
     const util::config::ini_loader &app::get_configure() const { return cfg_loader_; }
@@ -425,6 +445,24 @@ namespace atapp {
             cfg_loader_.dump_to("atapp.id", conf_.id);
         }
 
+        cfg_loader_.dump_to("atapp.name", conf_.name, true);
+        cfg_loader_.dump_to("atapp.type_id", conf_.type_id);
+        cfg_loader_.dump_to("atapp.type_name", conf_.type_name);
+        if (conf_.name.empty()) {
+            std::stringstream ss;
+            ss << conf_.type_name << "-0x" << std::ios::hex << conf_.id;
+            conf_.name = ss.str();
+        }
+        {
+            uint64_t hash_out[2];
+            ::util::hash::murmur_hash3_x64_128(conf_.name.c_str(), conf_.name.size(), 0x01000193U, hash_out);
+            char hash_code_str[40] = {0};
+            UTIL_STRFUNC_SNPRINTF(hash_code_str, sizeof(hash_code_str), "%016llX%016llX", static_cast<unsigned long long>(hash_out[0]),
+                                  static_cast<unsigned long long>(hash_out[1]));
+            conf_.hash_code = &hash_code_str[0];
+        }
+
+
         // hostname
         {
             std::string hostname;
@@ -467,7 +505,7 @@ namespace atapp {
         cfg_loader_.dump_to("atapp.bus.send_buffer_number", conf_.bus_conf.send_buffer_number);
 
         return 0;
-    }
+    } // namespace atapp
 
     int app::run_ev_loop(atbus::adapter::loop_t *ev_loop) {
         util::cli::shell_stream ss(std::cerr);

@@ -4,8 +4,8 @@
  *  Created on: 2016年05月21日
  *      Author: owent
  */
-#ifndef LIBATAPP_ATAPP_LOG_SINK_MAKER_H_
-#define LIBATAPP_ATAPP_LOG_SINK_MAKER_H_
+#ifndef LIBATAPP_ATAPP_LOG_SINK_MAKER_H
+#define LIBATAPP_ATAPP_LOG_SINK_MAKER_H
 
 #pragma once
 

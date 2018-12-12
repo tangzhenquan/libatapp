@@ -4,8 +4,8 @@
  *  Created on: 2016年04月23日
  *      Author: owent
  */
-#ifndef LIBATAPP_ATAPP_H_
-#define LIBATAPP_ATAPP_H_
+#ifndef LIBATAPP_ATAPP_H
+#define LIBATAPP_ATAPP_H
 
 #pragma once
 
@@ -25,8 +25,6 @@
 #include "atapp_conf.h"
 #include "atapp_log_sink_maker.h"
 #include "atapp_module_impl.h"
-
-#define LIBATAPP_VERSION "0.1.0.0"
 
 namespace atapp {
     class app {
@@ -122,8 +120,18 @@ namespace atapp {
 
         const std::string &get_app_version() const;
 
+        const std::string &get_app_name() const;
+
+        const std::string &get_type_name() const;
+
+        app_id_t get_type_id() const;
+
+        const std::string &get_hash_code() const;
+
         atbus::node::ptr_t get_bus_node();
         const atbus::node::ptr_t get_bus_node() const;
+
+        bool is_remote_address_available(const std::string &hostname, const std::string &address) const;
 
         util::config::ini_loader &get_configure();
         const util::config::ini_loader &get_configure() const;

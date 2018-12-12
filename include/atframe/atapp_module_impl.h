@@ -4,8 +4,8 @@
  *  Created on: 2016年05月18日
  *      Author: owent
  */
-#ifndef LIBATAPP_ATAPP_MODULE_IMPL_H_
-#define LIBATAPP_ATAPP_MODULE_IMPL_H_
+#ifndef LIBATAPP_ATAPP_MODULE_IMPL_H
+#define LIBATAPP_ATAPP_MODULE_IMPL_H
 
 #pragma once
 
