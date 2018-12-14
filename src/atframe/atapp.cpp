@@ -18,8 +18,29 @@
 
 #include "cli/shell_font.h"
 
+
 namespace atapp {
     app *app::last_instance_;
+
+    static std::pair<uint64_t, const char *> make_size_showup(uint64_t sz) {
+        const char *unit = "B";
+        if (sz > 102400) {
+            sz /= 1024;
+            unit = "KB";
+        }
+
+        if (sz > 102400) {
+            sz /= 1024;
+            unit = "MB";
+        }
+
+        if (sz > 102400) {
+            sz /= 1024;
+            unit = "GB";
+        }
+
+        return std::pair<uint64_t, const char *>(sz, unit);
+    }
 
     app::app() : mode_(mode_t::CUSTOM) {
         last_instance_ = this;
@@ -317,10 +338,26 @@ namespace atapp {
                     offset_sys *= 1000000;
                     offset_usr += stat_.last_checkpoint_usage.ru_utime.tv_usec - last_usage.ru_utime.tv_usec;
                     offset_sys += stat_.last_checkpoint_usage.ru_stime.tv_usec - last_usage.ru_stime.tv_usec;
-                    WLOGINFO("[STAT]: atapp CPU usage: user %02.03f%%, sys %02.03f%%",
+
+                    std::pair<uint64_t, const char *> max_rss = make_size_showup(last_usage.ru_maxrss);
+#ifdef WIN32
+                    WLOGINFO("[STAT]: %s CPU usage: user %02.03f%%, sys %02.03f%%, max rss: %llu%s, page faults: %llu", get_app_name().c_str(),
                              offset_usr / (util::time::time_utility::MINITE_SECONDS * 10000.0f), // usec and add %
-                             offset_sys / (util::time::time_utility::MINITE_SECONDS * 10000.0f)  // usec and add %
-                    );
+                             offset_sys / (util::time::time_utility::MINITE_SECONDS * 10000.0f), // usec and add %
+                             static_cast<unsigned long long>(max_rss.first), max_rss.second, static_cast<unsigned long long>(last_usage.ru_majflt));
+#else
+                    std::pair<uint64_t, const char *> ru_ixrss = make_size_showup(last_usage.ru_ixrss);
+                    std::pair<uint64_t, const char *> ru_idrss = make_size_showup(last_usage.ru_idrss);
+                    std::pair<uint64_t, const char *> ru_isrss = make_size_showup(last_usage.ru_isrss);
+                    WLOGINFO("[STAT]: %s CPU usage: user %02.03f%%, sys %02.03f%%, max rss: %llu%s, shared size: %llu%s, unshared data size: %llu%s, unshared "
+                             "stack size: %llu%s, page faults: %llu",
+                             get_app_name().c_str(),
+                             offset_usr / (util::time::time_utility::MINITE_SECONDS * 10000.0f), // usec and add %
+                             offset_sys / (util::time::time_utility::MINITE_SECONDS * 10000.0f), // usec and add %
+                             static_cast<unsigned long long>(max_rss.first), max_rss.second, static_cast<unsigned long long>(ru_ixrss.first), ru_ixrss.second,
+                             static_cast<unsigned long long>(ru_idrss.first), ru_idrss.second, static_cast<unsigned long long>(ru_isrss.first), ru_isrss.second,
+                             static_cast<unsigned long long>(last_usage.ru_majflt));
+#endif
                 } else {
                     uv_getrusage(&stat_.last_checkpoint_usage);
                 }
@@ -387,7 +424,9 @@ namespace atapp {
         }
 
         if (0 == UTIL_STRFUNC_STRNCASE_CMP("shm:", address.c_str(), 4) || 0 == UTIL_STRFUNC_STRNCASE_CMP("unix:", address.c_str(), 5)) {
-            return hostname == ::atbus::node::get_hostname();
+            // return hostname == ::atbus::node::get_hostname();
+            // shm can not used as a remote address, it can only connect with a exist endpoint
+            return false;
         }
 
         return true;
@@ -1196,6 +1235,19 @@ namespace atapp {
             ->set_help_msg("run <command> [parameters...]          send custom command and parameters to server.");
 
         conf_.execute_path = argv[0];
+        // fill app version data
+        if (conf_.app_version.empty()) {
+            std::vector<std::string> out;
+            util::file_system::split_path(out, conf_.execute_path);
+            std::stringstream ss;
+            if (out.empty()) {
+                ss << conf_.execute_path;
+            } else {
+                ss << out[out.size() - 1];
+            }
+            ss << " with libatapp " << LIBATAPP_VERSION;
+            conf_.app_version = ss.str();
+        }
         opt_mgr->start(argc - 1, &argv[1], false, priv_data);
     }
 
