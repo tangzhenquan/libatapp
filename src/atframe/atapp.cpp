@@ -23,12 +23,7 @@ namespace atapp {
     app *app::last_instance_;
 
     static std::pair<uint64_t, const char *> make_size_showup(uint64_t sz) {
-        const char *unit = "B";
-        if (sz > 102400) {
-            sz /= 1024;
-            unit = "KB";
-        }
-
+        const char *unit = "KB";
         if (sz > 102400) {
             sz /= 1024;
             unit = "MB";
@@ -37,6 +32,11 @@ namespace atapp {
         if (sz > 102400) {
             sz /= 1024;
             unit = "GB";
+        }
+
+        if (sz > 102400) {
+            sz /= 1024;
+            unit = "TB";
         }
 
         return std::pair<uint64_t, const char *>(sz, unit);
