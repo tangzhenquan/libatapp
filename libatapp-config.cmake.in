@@ -1,0 +1,72 @@
+#.rst:
+# libatapp-config.cmake
+# --------
+#
+# Find the native libatapp includes and library.
+#
+#
+# Result Variables
+# ^^^^^^^^^^^^^^^^
+#
+# This module defines the following variables:
+#
+# ::
+#
+#   Libatapp_INCLUDE_DIRS   - where to find atframe/atapp_version.h , etc.
+#   Libatapp_LIBRARY_DIRS   - where to find (lib)atapp.(a/so/lib/dll/dylib), etc.
+#   Libatapp_LIBRARIES      - List of libraries when using libatapp.
+#   Libatapp_C_LIBRARIES    - List of libraries when using libatapp_c (C binding).
+#   Libatapp_FOUND          - True if libatapp found.
+#   Libatapp_VERSION        - Full version of libatapp
+#
+# ::
+#
+
+#=============================================================================
+# Copyright 2018 OWenT.
+#
+# Distributed under the OSI-approved BSD License (the "License");
+# see accompanying file Copyright.txt for details.
+#
+# This software is distributed WITHOUT ANY WARRANTY; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the License for more information.
+#=============================================================================
+# (To distribute this file outside of CMake, substitute the full
+#  License text for the above reference.)
+
+set(Libatapp_VERSION "@LIBATAPP_VERSION@")
+
+@PACKAGE_INIT@
+
+################################################################################
+# libatapp source dir
+set(Libatapp_SOURCE_DIR "@PROJECT_SOURCE_DIR@")
+
+set_and_check(Libatapp_INCLUDE_DIRS "@PACKAGE_INCLUDE_INSTALL_DIR@")
+set_and_check(Libatapp_LIBRARY_DIRS "@PACKAGE_CMAKE_INSTALL_LIBDIR@")
+
+
+# Normal search.
+set(Libatapp_NAMES atapp libatapp)
+set(Libatapp_C_NAMES atapp_c libatapp_c)
+
+# Try each search configuration.
+find_library(Libatapp_LIBRARIES    NAMES ${Libatapp_NAMES}    PATHS ${Libatapp_LIBRARY_DIRS} NO_DEFAULT_PATH)
+find_library(Libatapp_C_LIBRARIES  NAMES ${Libatapp_C_NAMES}  PATHS ${Libatapp_LIBRARY_DIRS} NO_DEFAULT_PATH)
+
+mark_as_advanced(Libatapp_INCLUDE_DIRS Libatapp_LIBRARY_DIRS Libatapp_C_NAMES Libatapp_LIBRARIES Libcotask_LIBRARIES)
+
+# handle the QUIETLY and REQUIRED arguments and set LIBATAPP_FOUND to TRUE if
+# all listed variables are TRUE
+include("FindPackageHandleStandardArgs")
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(Libatapp 
+    FOUND_VAR Libatapp_FOUND
+    REQUIRED_VARS Libatapp_INCLUDE_DIRS Libatapp_LIBRARIES)
+
+if (Libatapp_FOUND)
+    set(LIBATAPP_FOUND ${Libatapp_FOUND})
+endif()
+
+
+# check_required_components(Libatapp)

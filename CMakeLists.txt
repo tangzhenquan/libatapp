@@ -64,3 +64,32 @@ endif()
 #     include ("${3RD_PARTY_ATFRAME_UTILS_PKG_DIR}/test/test.utils-macro.cmake")
 #     add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/test")
 # endif()
+
+## 生成文档和导入配置
+
+# Install configuration
+set(CMAKE_INSTALL_CMAKEDIR "${CMAKE_INSTALL_LIBDIR}/cmake" CACHE STRING "Directory relative to CMAKE_INSTALL to install the cmake configuration files")
+
+include(CMakePackageConfigHelpers)
+set(INCLUDE_INSTALL_DIR include)
+
+file(MAKE_DIRECTORY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/cmake")
+
+configure_package_config_file(
+    "${CMAKE_CURRENT_LIST_DIR}/libatapp-config.cmake.in"
+    "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/cmake/libatapp-config.cmake"
+    INSTALL_DESTINATION ${CMAKE_INSTALL_CMAKEDIR}
+    PATH_VARS LIBATAPP_VERSION INCLUDE_INSTALL_DIR CMAKE_INSTALL_LIBDIR PROJECT_SOURCE_DIR
+    NO_CHECK_REQUIRED_COMPONENTS_MACRO
+)
+
+write_basic_package_version_file(
+    "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/cmake/libatapp-config-version.cmake"
+    VERSION ${LIBATAPP_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+install(
+    FILES "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/cmake/libatapp-config.cmake" "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/cmake/libatapp-config-version.cmake"
+    DESTINATION ${CMAKE_INSTALL_CMAKEDIR}
+)
