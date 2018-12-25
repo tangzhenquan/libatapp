@@ -19,7 +19,7 @@ namespace atapp {
     class module_impl {
     protected:
         module_impl();
-        ~module_impl();
+        virtual ~module_impl();
 
     private:
         module_impl(const module_impl &) UTIL_CONFIG_DELETED_FUNCTION;
