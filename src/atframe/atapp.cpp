@@ -721,10 +721,9 @@ namespace atapp {
                 WLOG_GETCAT(i)->set_stacktrace_level(stacktrace_level_max, stacktrace_level_min);
             }
 
-            // FIXME: For now, log can not be reload. we may make it available someday in the future
-            if (!WLOG_GETCAT(i)->get_sinks().empty()) {
-                continue;
-            }
+            // For now, only log level can be reload
+            size_t old_sink_number = WLOG_GETCAT(i)->sink_size();
+            size_t new_sink_number = 0;
 
             // register log handles
             for (uint32_t j = 0;; ++j) {
@@ -752,15 +751,26 @@ namespace atapp {
                 log_handle_max = util::log::log_formatter::get_level_by_name(log_level_name.c_str());
 
                 // register log sink
-                std::map<std::string, log_sink_maker::log_reg_t>::iterator iter = log_reg_.find(sink_type);
-                if (iter != log_reg_.end()) {
-                    util::log::log_wrapper::log_handler_t log_handler = iter->second(log_name, *WLOG_GETCAT(i), j, cfg_set);
-                    WLOG_GETCAT(i)->add_sink(log_handler, static_cast<util::log::log_wrapper::level_t::type>(log_handle_min),
-                                             static_cast<util::log::log_wrapper::level_t::type>(log_handle_max));
+                if (new_sink_number >= old_sink_number) {
+                    std::map<std::string, log_sink_maker::log_reg_t>::iterator iter = log_reg_.find(sink_type);
+                    if (iter != log_reg_.end()) {
+                        util::log::log_wrapper::log_handler_t log_handler = iter->second(log_name, *WLOG_GETCAT(i), j, cfg_set);
+                        WLOG_GETCAT(i)->add_sink(log_handler, static_cast<util::log::log_wrapper::level_t::type>(log_handle_min),
+                                                 static_cast<util::log::log_wrapper::level_t::type>(log_handle_max));
+                        ++new_sink_number;
+                    } else {
+                        ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "unavailable log type " << sink_type
+                             << ", you can add log type register handle before init." << std::endl;
+                    }
                 } else {
-                    ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "unavailable log type " << sink_type
-                         << ", you can add log type register handle before init." << std::endl;
+                    WLOG_GETCAT(i)->set_sink(new_sink_number, static_cast<util::log::log_wrapper::level_t::type>(log_handle_min),
+                                             static_cast<util::log::log_wrapper::level_t::type>(log_handle_max));
+                    ++new_sink_number;
                 }
+            }
+
+            while (WLOG_GETCAT(i)->sink_size() > new_sink_number) {
+                WLOG_GETCAT(i)->pop_sink();
             }
         }
 
