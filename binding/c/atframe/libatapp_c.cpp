@@ -140,7 +140,7 @@ namespace detail {
         void *private_data_;
     };
 
-    class libatapp_c_on_module : public ::atapp::module_impl {
+    class libatapp_c_on_module UTIL_CONFIG_FINAL : public ::atapp::module_impl {
     public:
         libatapp_c_on_module(const char *name) {
             name_ = name;
@@ -149,57 +149,67 @@ namespace detail {
             on_reload_ = NULL;
             on_stop_ = NULL;
             on_timeout_ = NULL;
+            on_cleanup_ = NULL;
             on_tick_ = NULL;
             on_init_private_data_ = NULL;
             on_reload_private_data_ = NULL;
             on_stop_private_data_ = NULL;
             on_timeout_private_data_ = NULL;
             on_tick_private_data_ = NULL;
+            on_cleanup_private_data_ = NULL;
         }
 
-        virtual int init() {
+        virtual int init() UTIL_CONFIG_OVERRIDE UTIL_CONFIG_FINAL {
             if (NULL != on_init_) {
                 libatapp_c_module mod;
                 mod = this;
-                (*on_init_)(mod, on_init_private_data_);
+                return (*on_init_)(mod, on_init_private_data_);
             }
             return 0;
         };
 
-        virtual int reload() {
+        virtual int reload() UTIL_CONFIG_OVERRIDE UTIL_CONFIG_FINAL {
             if (NULL != on_reload_) {
                 libatapp_c_module mod;
                 mod = this;
-                (*on_reload_)(mod, on_reload_private_data_);
+                return (*on_reload_)(mod, on_reload_private_data_);
             }
             return 0;
         }
 
-        virtual int stop() {
+        virtual int stop() UTIL_CONFIG_OVERRIDE UTIL_CONFIG_FINAL {
             if (NULL != on_stop_) {
                 libatapp_c_module mod;
                 mod = this;
-                (*on_stop_)(mod, on_stop_private_data_);
+                return (*on_stop_)(mod, on_stop_private_data_);
             }
             return 0;
         }
 
-        virtual int timeout() {
+        virtual int timeout() UTIL_CONFIG_OVERRIDE UTIL_CONFIG_FINAL {
             if (NULL != on_timeout_) {
                 libatapp_c_module mod;
                 mod = this;
-                (*on_timeout_)(mod, on_timeout_private_data_);
+                return (*on_timeout_)(mod, on_timeout_private_data_);
             }
             return 0;
         }
 
-        virtual const char *name() const { return name_.c_str(); }
+        virtual void cleanup() UTIL_CONFIG_OVERRIDE UTIL_CONFIG_FINAL {
+            if (NULL != on_cleanup_) {
+                libatapp_c_module mod;
+                mod = this;
+                (*on_cleanup_)(mod, on_cleanup_private_data_);
+            }
+        }
 
-        virtual int tick() {
+        virtual const char *name() const UTIL_CONFIG_OVERRIDE UTIL_CONFIG_FINAL { return name_.c_str(); }
+
+        virtual int tick() UTIL_CONFIG_OVERRIDE UTIL_CONFIG_FINAL {
             if (NULL != on_tick_) {
                 libatapp_c_module mod;
                 mod = this;
-                (*on_tick_)(mod, on_tick_private_data_);
+                return (*on_tick_)(mod, on_tick_private_data_);
             }
 
             return 0;
@@ -216,6 +226,8 @@ namespace detail {
         void *on_stop_private_data_;
         libatapp_c_module_on_timeout_fn_t on_timeout_;
         void *on_timeout_private_data_;
+        libatapp_c_module_on_cleanup_fn_t on_cleanup_;
+        void *on_cleanup_private_data_;
         libatapp_c_module_on_tick_fn_t on_tick_;
         void *on_tick_private_data_;
 
@@ -620,6 +632,15 @@ UTIL_SYMBOL_EXPORT void __cdecl libatapp_c_module_set_on_timeout(libatapp_c_modu
 
     ATAPP_MODULE(mod)->on_timeout_ = fn;
     ATAPP_MODULE(mod)->on_timeout_private_data_ = priv_data;
+}
+
+UTIL_SYMBOL_EXPORT void __cdecl libatapp_c_module_set_on_cleanup(libatapp_c_module mod, libatapp_c_module_on_cleanup_fn_t fn, void *priv_data) {
+    if (ATAPP_MODULE_IS_NULL(mod)) {
+        return;
+    }
+
+    ATAPP_MODULE(mod)->on_cleanup_ = fn;
+    ATAPP_MODULE(mod)->on_cleanup_private_data_ = priv_data;
 }
 
 UTIL_SYMBOL_EXPORT void __cdecl libatapp_c_module_set_on_tick(libatapp_c_module mod, libatapp_c_module_on_tick_fn_t fn, void *priv_data) {

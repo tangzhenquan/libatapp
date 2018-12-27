@@ -15,6 +15,8 @@ namespace atapp {
 
     int module_impl::stop() { return 0; }
 
+    void module_impl::cleanup() {}
+
     int module_impl::timeout() { return 0; }
 
     int module_impl::tick() { return 0; }
@@ -47,4 +49,4 @@ namespace atapp {
     app *module_impl::get_app() { return owner_; }
 
     const app *module_impl::get_app() const { return owner_; }
-}
+} // namespace atapp

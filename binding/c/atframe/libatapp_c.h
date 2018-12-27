@@ -110,12 +110,14 @@ typedef int32_t (*libatapp_c_module_on_init_fn_t)(libatapp_c_module, void *priv_
 typedef int32_t (*libatapp_c_module_on_reload_fn_t)(libatapp_c_module, void *priv_data);
 typedef int32_t (*libatapp_c_module_on_stop_fn_t)(libatapp_c_module, void *priv_data);
 typedef int32_t (*libatapp_c_module_on_timeout_fn_t)(libatapp_c_module, void *priv_data);
+typedef void (*libatapp_c_module_on_cleanup_fn_t)(libatapp_c_module, void *priv_data);
 typedef int32_t (*libatapp_c_module_on_tick_fn_t)(libatapp_c_module, void *priv_data);
 
 UTIL_SYMBOL_EXPORT void __cdecl libatapp_c_module_set_on_init(libatapp_c_module mod, libatapp_c_module_on_init_fn_t fn, void *priv_data);
 UTIL_SYMBOL_EXPORT void __cdecl libatapp_c_module_set_on_reload(libatapp_c_module mod, libatapp_c_module_on_reload_fn_t fn, void *priv_data);
 UTIL_SYMBOL_EXPORT void __cdecl libatapp_c_module_set_on_stop(libatapp_c_module mod, libatapp_c_module_on_stop_fn_t fn, void *priv_data);
 UTIL_SYMBOL_EXPORT void __cdecl libatapp_c_module_set_on_timeout(libatapp_c_module mod, libatapp_c_module_on_timeout_fn_t fn, void *priv_data);
+UTIL_SYMBOL_EXPORT void __cdecl libatapp_c_module_set_on_cleanup(libatapp_c_module mod, libatapp_c_module_on_cleanup_fn_t fn, void *priv_data);
 UTIL_SYMBOL_EXPORT void __cdecl libatapp_c_module_set_on_tick(libatapp_c_module mod, libatapp_c_module_on_tick_fn_t fn, void *priv_data);
 
 // =========================== utilities ===========================
