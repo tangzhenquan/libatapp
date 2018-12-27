@@ -435,6 +435,15 @@ namespace atapp {
     util::config::ini_loader &app::get_configure() { return cfg_loader_; }
     const util::config::ini_loader &app::get_configure() const { return cfg_loader_; }
 
+    bool app::add_log_sink_maker(const std::string &name, log_sink_maker::log_reg_t fn) {
+        if (log_reg_.end() != log_reg_.find(name)) {
+            return false;
+        }
+
+        log_reg_[name] = fn;
+        return true;
+    }
+
     void app::set_evt_on_recv_msg(callback_fn_on_msg_t fn) { evt_on_recv_msg_ = fn; }
     void app::set_evt_on_send_fail(callback_fn_on_send_fail_t fn) { evt_on_send_fail_ = fn; }
     void app::set_evt_on_app_connected(callback_fn_on_connected_t fn) { evt_on_app_connected_ = fn; }
