@@ -32,10 +32,21 @@ namespace atapp {
         /**
          * @brief try to stop a module
          * @return if can't be stoped immadiately, return > 0, if there is a error, return < 0, otherwise 0
-         * @note may be called more than once, when the first return <= 0, this module will be disabled.
+         * @note This callback may be called more than once, when the first return <= 0, this module will be disabled.
          */
         virtual int stop();
 
+        /**
+         * @brief cleanup a module
+         * @note This callback only will be call once after all module stopped
+         */
+        virtual void cleanup();
+
+        /**
+         * @brief stop timeout callback
+         * @note This callback be called if the module can not be stopped even in a long time.
+         *       After this event, all module and atapp will be forced stopped.
+         */
         virtual int timeout();
 
         virtual const char *name() const;

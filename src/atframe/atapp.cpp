@@ -626,6 +626,12 @@ namespace atapp {
         close_timer(tick_timer_.tick_timer);
         close_timer(tick_timer_.timeout_timer);
 
+        owent_foreach(module_ptr_t & mod, modules_) {
+            if (mod) {
+                mod->cleanup();
+            }
+        }
+
         // not running now
         set_flag(flag_t::RUNNING, false);
 
