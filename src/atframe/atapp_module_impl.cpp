@@ -13,6 +13,8 @@ namespace atapp {
 
     int module_impl::reload() { return 0; }
 
+    int module_impl::setup_log() { return 0; }
+
     int module_impl::stop() { return 0; }
 
     void module_impl::cleanup() {}

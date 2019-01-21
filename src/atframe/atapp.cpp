@@ -651,8 +651,11 @@ namespace atapp {
         // block signals
         app::last_instance_ = this;
         signal(SIGTERM, _app_setup_signal_term);
+        signal(SIGINT, SIG_IGN);
 
 #ifndef WIN32
+        signal(SIGSTOP, _app_setup_signal_term);
+        signal(SIGQUIT, SIG_IGN);
         signal(SIGHUP, SIG_IGN);  // lost parent process
         signal(SIGPIPE, SIG_IGN); // close stdin, stdout or stderr
         signal(SIGTSTP, SIG_IGN); // close tty
@@ -677,6 +680,20 @@ namespace atapp {
 
         if (log_reg_.find(log_sink_maker::get_stderr_sink_name()) == log_reg_.end()) {
             log_reg_[log_sink_maker::get_stderr_sink_name()] = log_sink_maker::get_stderr_sink_reg();
+        }
+
+        if (false == check(flag_t::RUNNING)) {
+            // if inited, let all modules setup custom logger
+            owent_foreach(module_ptr_t & mod, modules_) {
+                if (mod && mod->is_enabled()) {
+                    int res = mod->setup_log();
+                    if (0 != res) {
+                        ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "setup log for module " << mod->name() << " failed, result: " << res << "."
+                             << std::endl;
+                        return res;
+                    }
+                }
+            }
         }
 
         // load configure

@@ -30,6 +30,13 @@ namespace atapp {
         virtual int reload();
 
         /**
+         * @brief where to setup custom log sink
+         * @note this will be called only once and before reload and init
+         * @return error code or 0
+         */
+        virtual int setup_log();
+
+        /**
          * @brief try to stop a module
          * @return if can't be stoped immadiately, return > 0, if there is a error, return < 0, otherwise 0
          * @note This callback may be called more than once, when the first return <= 0, this module will be disabled.
@@ -49,6 +56,10 @@ namespace atapp {
          */
         virtual int timeout();
 
+        /**
+         * @brief get module name
+         * @return module name
+         */
         virtual const char *name() const;
 
         /**
