@@ -336,6 +336,22 @@ UTIL_SYMBOL_EXPORT int32_t __cdecl libatapp_c_run(libatapp_c_context context, in
     return ATAPP_CONTEXT(context)->run(uv_default_loop(), argc, argv, priv_data);
 }
 
+UTIL_SYMBOL_EXPORT int32_t __cdecl libatapp_c_init(libatapp_c_context context, int32_t argc, const char **argv, void *priv_data) {
+    if (ATAPP_CONTEXT_IS_NULL(context)) {
+        return EN_ATBUS_ERR_PARAMS;
+    }
+
+    return ATAPP_CONTEXT(context)->init(uv_default_loop(), argc, argv, priv_data);
+}
+
+UTIL_SYMBOL_EXPORT int32_t __cdecl libatapp_c_run_noblock(libatapp_c_context context, uint64_t max_event_count) {
+    if (ATAPP_CONTEXT_IS_NULL(context)) {
+        return EN_ATBUS_ERR_PARAMS;
+    }
+
+    return ATAPP_CONTEXT(context)->run_noblock(max_event_count);
+}
+
 UTIL_SYMBOL_EXPORT int32_t __cdecl libatapp_c_reload(libatapp_c_context context) {
     if (ATAPP_CONTEXT_IS_NULL(context)) {
         return EN_ATBUS_ERR_PARAMS;
@@ -413,12 +429,36 @@ UTIL_SYMBOL_EXPORT uint64_t __cdecl libatapp_c_get_configure(libatapp_c_context 
 }
 
 
-UTIL_SYMBOL_EXPORT int32_t __cdecl libatapp_c_is_running(libatapp_c_context context) {
+UTIL_SYMBOL_EXPORT int32_t __cdecl libatapp_c_is_inited(libatapp_c_context context) {
     if (ATAPP_CONTEXT_IS_NULL(context)) {
-        return 0;
+        return false;
     }
 
-    return ATAPP_CONTEXT(context)->check(atapp::app::flag_t::RUNNING);
+    return ATAPP_CONTEXT(context)->is_inited();
+}
+
+UTIL_SYMBOL_EXPORT int32_t __cdecl libatapp_c_is_running(libatapp_c_context context) {
+    if (ATAPP_CONTEXT_IS_NULL(context)) {
+        return false;
+    }
+
+    return ATAPP_CONTEXT(context)->is_running();
+}
+
+UTIL_SYMBOL_EXPORT int32_t __cdecl libatapp_c_is_closing(libatapp_c_context context) {
+    if (ATAPP_CONTEXT_IS_NULL(context)) {
+        return false;
+    }
+
+    return ATAPP_CONTEXT(context)->is_closing();
+}
+
+UTIL_SYMBOL_EXPORT int32_t __cdecl libatapp_c_is_closed(libatapp_c_context context) {
+    if (ATAPP_CONTEXT_IS_NULL(context)) {
+        return false;
+    }
+
+    return ATAPP_CONTEXT(context)->is_closed();
 }
 
 UTIL_SYMBOL_EXPORT int32_t __cdecl libatapp_c_is_stoping(libatapp_c_context context) {

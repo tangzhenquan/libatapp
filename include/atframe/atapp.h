@@ -34,8 +34,30 @@ namespace atapp {
         typedef std::shared_ptr<module_impl> module_ptr_t;
 
         struct flag_t {
-            enum type { RUNNING = 0, STOPING, TIMEOUT, FLAG_MAX };
+            enum type {
+                RUNNING = 0, //
+                STOPING,     //
+                TIMEOUT,
+                IN_CALLBACK,
+                RESET_TIMER,
+                INITIALIZED,
+                STOPPED,
+                FLAG_MAX
+            };
         };
+
+        class flag_guard_t {
+        public:
+            flag_guard_t(app &owner, flag_t::type f);
+            ~flag_guard_t();
+
+        private:
+            flag_guard_t(const flag_guard_t &);
+
+            app *owner_;
+            flag_t::type flag_;
+        };
+        friend class flag_guard_t;
 
         struct mode_t {
             enum type {
@@ -83,7 +105,42 @@ namespace atapp {
         app();
         ~app();
 
+        /**
+         * @brief run atapp loop until stop
+         * @param ev_loop pointer to event loop
+         * @param argc argument count for command line(include exec)
+         * @param argv arguments for command line(include exec)
+         * @param priv_data private data for custom option callbacks
+         * @note you can call init(ev_loop, argc, argv, priv_data), and then call run(NULL, 0, NULL).
+         * @return 0 or error code
+         */
         int run(atbus::adapter::loop_t *ev_loop, int argc, const char **argv, void *priv_data = NULL);
+
+        /**
+         * @brief initialize atapp
+         * @param ev_loop pointer to event loop
+         * @param argc argument count for command line(include exec)
+         * @param argv arguments for command line(include exec)
+         * @param priv_data private data for custom option callbacks
+         * @return 0 or error code
+         */
+        int init(atbus::adapter::loop_t *ev_loop, int argc, const char **argv, void *priv_data = NULL);
+
+        /**
+         * @brief run atapp loop but noblock if there is no event
+         * @note you must call init(ev_loop, argc, argv, priv_data), before call run_noblock().
+         * @param max_event_count max event in once call
+         * @return 0 for no more actions or error code < 0 or 1 for there is pending actions
+         */
+        int run_noblock(uint64_t max_event_count = 20000);
+
+        bool is_inited() const UTIL_CONFIG_NOEXCEPT;
+
+        bool is_running() const UTIL_CONFIG_NOEXCEPT;
+
+        bool is_closing() const UTIL_CONFIG_NOEXCEPT;
+
+        bool is_closed() const UTIL_CONFIG_NOEXCEPT;
 
         int reload();
 
@@ -158,7 +215,9 @@ namespace atapp {
 
         int apply_configure();
 
-        int run_ev_loop(atbus::adapter::loop_t *ev_loop);
+        void run_ev_loop(int run_mode);
+
+        int run_inner(int run_mode);
 
         int setup_signal();
 
@@ -229,6 +288,8 @@ namespace atapp {
         util::cli::cmd_option::ptr_type app_option_;
         util::cli::cmd_option_ci::ptr_type cmd_handler_;
         std::vector<std::string> last_command_;
+        int setup_result_;
+        uint64_t last_proc_event_count_;
 
         app_conf conf_;
         mutable std::string build_version_;

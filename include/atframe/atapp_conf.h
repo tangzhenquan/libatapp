@@ -37,6 +37,23 @@ namespace atapp {
         std::string name;
         std::string hash_code;
     };
+
+    typedef enum {
+        EN_ATAPP_ERR_SUCCESS = 0,
+        EN_ATAPP_ERR_NOT_INITED = -1001,
+        EN_ATAPP_ERR_ALREADY_INITED = -1002,
+        EN_ATAPP_ERR_WRITE_PID_FILE = -1003,
+        EN_ATAPP_ERR_SETUP_TIMER = -1004,
+        EN_ATAPP_ERR_ALREADY_CLOSED = -1005,
+        EN_ATAPP_ERR_MISSING_CONFIGURE_FILE = -1006,
+        EN_ATAPP_ERR_LOAD_CONFIGURE_FILE = -1007,
+        EN_ATAPP_ERR_SETUP_ATBUS = -1101,
+        EN_ATAPP_ERR_SEND_FAILED = -1102,
+        EN_ATAPP_ERR_COMMAND_IS_NULL = -1801,
+        EN_ATAPP_ERR_NO_AVAILABLE_ADDRESS = -1802,
+        EN_ATAPP_ERR_CONNECT_ATAPP_FAILED = -1803,
+        EN_ATAPP_ERR_MIN = -1999,
+    } ATAPP_ERROR_TYPE;
 } // namespace atapp
 
 #endif

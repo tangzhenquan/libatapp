@@ -66,6 +66,9 @@ UTIL_SYMBOL_EXPORT void __cdecl libatapp_c_destroy(libatapp_c_context context);
 
 // =========================== actions ===========================
 UTIL_SYMBOL_EXPORT int32_t __cdecl libatapp_c_run(libatapp_c_context context, int32_t argc, const char **argv, void *priv_data);
+UTIL_SYMBOL_EXPORT int32_t __cdecl libatapp_c_init(libatapp_c_context context, int32_t argc, const char **argv, void *priv_data);
+UTIL_SYMBOL_EXPORT int32_t __cdecl libatapp_c_run_noblock(libatapp_c_context context, uint64_t max_event_count = 20000);
+
 UTIL_SYMBOL_EXPORT int32_t __cdecl libatapp_c_reload(libatapp_c_context context);
 UTIL_SYMBOL_EXPORT int32_t __cdecl libatapp_c_stop(libatapp_c_context context);
 UTIL_SYMBOL_EXPORT int32_t __cdecl libatapp_c_tick(libatapp_c_context context);
@@ -80,7 +83,10 @@ UTIL_SYMBOL_EXPORT uint64_t __cdecl libatapp_c_get_configure(libatapp_c_context 
                                                              uint64_t arr_sz);
 
 // =========================== flags ===========================
+UTIL_SYMBOL_EXPORT int32_t __cdecl libatapp_c_is_inited(libatapp_c_context context);
 UTIL_SYMBOL_EXPORT int32_t __cdecl libatapp_c_is_running(libatapp_c_context context);
+UTIL_SYMBOL_EXPORT int32_t __cdecl libatapp_c_is_closing(libatapp_c_context context);
+UTIL_SYMBOL_EXPORT int32_t __cdecl libatapp_c_is_closed(libatapp_c_context context);
 UTIL_SYMBOL_EXPORT int32_t __cdecl libatapp_c_is_stoping(libatapp_c_context context);
 UTIL_SYMBOL_EXPORT int32_t __cdecl libatapp_c_is_timeout(libatapp_c_context context);
 

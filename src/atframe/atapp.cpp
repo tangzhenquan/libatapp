@@ -22,6 +22,23 @@
 namespace atapp {
     app *app::last_instance_;
 
+    app::flag_guard_t::flag_guard_t(app &owner, flag_t::type f) : owner_(&owner), flag_(f) {
+        if (owner_->check_flag(flag_)) {
+            owner_ = NULL;
+            return;
+        }
+
+        owner_->set_flag(flag_, true);
+    }
+
+    app::flag_guard_t::~flag_guard_t() {
+        if (NULL == owner_) {
+            return;
+        }
+
+        owner_->set_flag(flag_, false);
+    }
+
     static std::pair<uint64_t, const char *> make_size_showup(uint64_t sz) {
         const char *unit = "KB";
         if (sz > 102400) {
@@ -42,7 +59,7 @@ namespace atapp {
         return std::pair<uint64_t, const char *>(sz, unit);
     }
 
-    app::app() : mode_(mode_t::CUSTOM) {
+    app::app() : setup_result_(0), last_proc_event_count_(0), mode_(mode_t::CUSTOM) {
         last_instance_ = this;
         conf_.id = 0;
         conf_.execute_path = NULL;
@@ -83,7 +100,44 @@ namespace atapp {
     }
 
     int app::run(atbus::adapter::loop_t *ev_loop, int argc, const char **argv, void *priv_data) {
-        if (check(flag_t::RUNNING)) {
+        if (0 != setup_result_) {
+            return setup_result_;
+        }
+
+        if (check(flag_t::IN_CALLBACK)) {
+            return 0;
+        }
+
+        if (is_closed()) {
+            return EN_ATAPP_ERR_ALREADY_CLOSED;
+        }
+
+        if (false == check_flag(flag_t::INITIALIZED)) {
+            int res = init(ev_loop, argc, argv, priv_data);
+            if (res < 0) {
+                return res;
+            }
+        }
+
+        if (mode_t::START != mode_) {
+            return 0;
+        }
+
+        int ret = 0;
+        while (!is_closed()) {
+            ret = run_inner(UV_RUN_DEFAULT);
+        }
+        return ret;
+
+    } // namespace atapp
+
+    int app::init(atbus::adapter::loop_t *ev_loop, int argc, const char **argv, void *priv_data) {
+        if (check_flag(flag_t::INITIALIZED)) {
+            return EN_ATAPP_ERR_ALREADY_INITED;
+        }
+        setup_result_ = 0;
+
+        if (check_flag(flag_t::IN_CALLBACK)) {
             return 0;
         }
 
@@ -106,7 +160,7 @@ namespace atapp {
         int ret = reload();
         if (ret < 0) {
             ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "load configure failed" << std::endl;
-            return ret;
+            return setup_result_ = ret;
         }
 
         // step 5. if not in start mode, send cmd
@@ -119,7 +173,7 @@ namespace atapp {
         case mode_t::RELOAD: {
             return send_last_command(ev_loop);
         }
-        default: { return 0; }
+        default: { return setup_result_ = 0; }
         }
 
         // step 6. setup log & signal
@@ -127,14 +181,14 @@ namespace atapp {
         if (ret < 0) {
             ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "setup log failed" << std::endl;
             write_pidfile();
-            return ret;
+            return setup_result_ = ret;
         }
 
         ret = setup_signal();
         if (ret < 0) {
             ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "setup signal failed" << std::endl;
             write_pidfile();
-            return ret;
+            return setup_result_ = ret;
         }
 
         ret = setup_atbus();
@@ -142,7 +196,7 @@ namespace atapp {
             ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "setup atbus failed" << std::endl;
             bus_node_.reset();
             write_pidfile();
-            return ret;
+            return setup_result_ = ret;
         }
 
         // step 7. all modules reload
@@ -152,21 +206,36 @@ namespace atapp {
                 if (ret < 0) {
                     ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "load configure of " << mod->name() << " failed" << std::endl;
                     write_pidfile();
-                    return ret;
+                    return setup_result_ = ret;
                 }
             }
         }
 
         // step 8. all modules init
-        owent_foreach(module_ptr_t & mod, modules_) {
-            if (mod->is_enabled()) {
-                ret = mod->init();
-                if (ret < 0) {
-                    ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "initialze " << mod->name() << " failed" << std::endl;
-                    write_pidfile();
-                    return ret;
+        size_t inited_mod_idx = 0;
+        int mod_init_res = 0;
+        for (; mod_init_res >= 0 && inited_mod_idx < modules_.size(); ++inited_mod_idx) {
+            if (modules_[inited_mod_idx]->is_enabled()) {
+                mod_init_res = modules_[inited_mod_idx]->init();
+                if (mod_init_res < 0) {
+                    ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "initialze " << modules_[inited_mod_idx]->name() << " failed" << std::endl;
+                    break;
                 }
             }
+        }
+        // cleanup all inited modules if failed
+        if (mod_init_res < 0) {
+            for (; inited_mod_idx >= 0 && inited_mod_idx < modules_.size(); --inited_mod_idx) {
+                if (modules_[inited_mod_idx]) {
+                    modules_[inited_mod_idx]->cleanup();
+                }
+
+                if (0 == inited_mod_idx) {
+                    break;
+                }
+            }
+            write_pidfile();
+            return setup_result_ = mod_init_res;
         }
 
         // callback of all modules inited
@@ -174,9 +243,58 @@ namespace atapp {
             evt_on_all_module_inited_(*this);
         }
 
-        // step 9. set running
-        return run_ev_loop(ev_loop);
+        flag_guard_t running_guard(*this, flag_t::RUNNING);
+
+        // step 9. write pid file
+        if (false == write_pidfile()) {
+            return EN_ATAPP_ERR_WRITE_PID_FILE;
+        }
+
+        if (setup_timer() < 0) {
+            // cleanup modules
+            for (std::vector<module_ptr_t>::reverse_iterator rit = modules_.rbegin(); rit != modules_.rend(); ++rit) {
+                if (*rit) {
+                    (*rit)->cleanup();
+                }
+            }
+
+            return EN_ATAPP_ERR_SETUP_TIMER;
+        }
+
+        set_flag(flag_t::STOPPED, false);
+        set_flag(flag_t::STOPING, false);
+        set_flag(flag_t::INITIALIZED, true);
+        set_flag(flag_t::RUNNING, true);
+
+        return EN_ATAPP_ERR_SUCCESS;
+    } // namespace atapp
+
+    int app::run_noblock(uint64_t max_event_count) {
+        uint64_t evt_count = 0;
+        int ret = 0;
+        do {
+            ret = run_inner(UV_RUN_NOWAIT);
+            if (ret < 0) {
+                break;
+            }
+
+            if (0 == last_proc_event_count_) {
+                break;
+            }
+
+            evt_count += last_proc_event_count_;
+        } while (0 == max_event_count || evt_count < max_event_count);
+
+        return ret;
     }
+
+    bool app::is_inited() const UTIL_CONFIG_NOEXCEPT { return check_flag(flag_t::INITIALIZED); }
+
+    bool app::is_running() const UTIL_CONFIG_NOEXCEPT { return check_flag(flag_t::RUNNING); }
+
+    bool app::is_closing() const UTIL_CONFIG_NOEXCEPT { return check_flag(flag_t::STOPING); }
+
+    bool app::is_closed() const UTIL_CONFIG_NOEXCEPT { return check_flag(flag_t::STOPPED); }
 
     int app::reload() {
         app_conf old_conf = conf_;
@@ -190,12 +308,12 @@ namespace atapp {
         if (conf_.conf_file.empty()) {
             ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "missing configure file" << std::endl;
             print_help();
-            return -1;
+            return EN_ATAPP_ERR_MISSING_CONFIGURE_FILE;
         }
         if (cfg_loader_.load_file(conf_.conf_file.c_str(), false) < 0) {
             ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "load configure file " << conf_.conf_file << " failed" << std::endl;
             print_help();
-            return -1;
+            return EN_ATAPP_ERR_LOAD_CONFIGURE_FILE;
         }
 
         // step 3. reload from external configure files
@@ -239,10 +357,14 @@ namespace atapp {
                     mod->reload();
                 }
             }
+        }
 
-            // step 8. if running and tick interval changed, reset timer
-            if (old_conf.tick_interval != conf_.tick_interval) {
-                setup_timer();
+        // step 8. if running and tick interval changed, reset timer
+        if (old_conf.tick_interval != conf_.tick_interval) {
+            set_flag(flag_t::RESET_TIMER, true);
+
+            if (check(flag_t::RUNNING)) {
+                uv_stop(bus_node_->get_evloop());
             }
         }
 
@@ -263,7 +385,7 @@ namespace atapp {
 
         // step 2. stop libuv and return from uv_run
         // if (!is_stoping) {
-        if (bus_node_) {
+        if (bus_node_ && NULL != bus_node_->get_evloop()) {
             uv_stop(bus_node_->get_evloop());
         }
         // }
@@ -313,10 +435,14 @@ namespace atapp {
             // only tick time less than tick interval will run loop again
             util::time::time_utility::update();
             end_tp = util::time::time_utility::now();
-        } while (active_count > 0 && (end_tp - start_tp) >= std::chrono::milliseconds(conf_.tick_interval));
+
+            if (active_count > 0) {
+                last_proc_event_count_ += static_cast<uint64_t>(active_count);
+            }
+        } while (active_count > 0 && (end_tp - start_tp) < std::chrono::milliseconds(conf_.tick_interval));
 
         // if is stoping, quit loop  every tick
-        if (check_flag(flag_t::STOPING) && bus_node_) {
+        if (check_flag(flag_t::STOPING) && bus_node_ && NULL != bus_node_->get_evloop()) {
             uv_stop(bus_node_->get_evloop());
         }
 
@@ -360,6 +486,10 @@ namespace atapp {
 #endif
                 } else {
                     uv_getrusage(&stat_.last_checkpoint_usage);
+                }
+
+                if (bus_node_ && NULL != bus_node_->get_evloop()) {
+                    uv_stop(bus_node_->get_evloop());
                 }
             }
         } while (false);
@@ -555,27 +685,23 @@ namespace atapp {
         return 0;
     } // namespace atapp
 
-    int app::run_ev_loop(atbus::adapter::loop_t *ev_loop) {
-        util::cli::shell_stream ss(std::cerr);
+    void app::run_ev_loop(int run_mode) {
+        util::time::time_utility::update();
 
-        set_flag(flag_t::RUNNING, true);
-
-        // write pid file
-        bool keep_running = write_pidfile();
-
-        // TODO if atbus is reset, init it again
-
-        if (setup_timer() < 0) {
-            set_flag(flag_t::RUNNING, false);
-            return -1;
-        }
-
-        while (keep_running && bus_node_) {
+        if (bus_node_) {
             // step X. loop uv_run util stop flag is set
             assert(bus_node_->get_evloop());
-            uv_run(bus_node_->get_evloop(), UV_RUN_DEFAULT);
+            if (NULL != bus_node_->get_evloop()) {
+                flag_guard_t in_callback_guard(*this, flag_t::IN_CALLBACK);
+                uv_run(bus_node_->get_evloop(), static_cast<uv_run_mode>(run_mode));
+            }
+
+            if (check_flag(flag_t::RESET_TIMER)) {
+                setup_timer();
+            }
+
             if (check_flag(flag_t::STOPING)) {
-                keep_running = false;
+                set_flag(flag_t::STOPPED, true);
 
                 if (check_flag(flag_t::TIMEOUT)) {
                     // step X. notify all modules timeout
@@ -598,7 +724,7 @@ namespace atapp {
                                 WLOGERROR("try to stop module %s but failed and return %d", mod->name(), res);
                             } else {
                                 // any module stop running will make app wait
-                                keep_running = true;
+                                set_flag(flag_t::STOPPED, false);
                             }
                         }
                     }
@@ -621,22 +747,49 @@ namespace atapp {
 
             // if atbus is at shutdown state, loop event dispatcher using next while iterator
         }
+    }
 
-        // close timer
-        close_timer(tick_timer_.tick_timer);
-        close_timer(tick_timer_.timeout_timer);
-
-        owent_foreach(module_ptr_t & mod, modules_) {
-            if (mod) {
-                mod->cleanup();
-            }
+    int app::run_inner(int run_mode) {
+        if (false == check_flag(flag_t::INITIALIZED)) {
+            return EN_ATAPP_ERR_NOT_INITED;
         }
 
-        // not running now
-        set_flag(flag_t::RUNNING, false);
+        last_proc_event_count_ = 0;
+        if (check_flag(flag_t::IN_CALLBACK)) {
+            return 0;
+        }
 
-        // cleanup pid file
-        cleanup_pidfile();
+        if (mode_t::START != mode_) {
+            return 0;
+        }
+
+        // TODO if atbus is reset, init it again
+
+        run_ev_loop(run_mode);
+
+        if (is_closed() && is_inited()) {
+            // close timer
+            close_timer(tick_timer_.tick_timer);
+            close_timer(tick_timer_.timeout_timer);
+
+            // cleanup modules
+            for (std::vector<module_ptr_t>::reverse_iterator rit = modules_.rbegin(); rit != modules_.rend(); ++rit) {
+                if (*rit) {
+                    (*rit)->cleanup();
+                }
+            }
+
+            // cleanup pid file
+            cleanup_pidfile();
+
+            set_flag(flag_t::INITIALIZED, false);
+            set_flag(flag_t::RUNNING, false);
+        }
+
+        if (last_proc_event_count_ > 0) {
+            return 1;
+        }
+
         return 0;
     }
 
@@ -819,13 +972,13 @@ namespace atapp {
         atbus::node::ptr_t connection_node = atbus::node::create();
         if (!connection_node) {
             WLOGERROR("create bus node failed.");
-            return -1;
+            return EN_ATAPP_ERR_SETUP_ATBUS;
         }
 
         ret = connection_node->init(conf_.id, &conf_.bus_conf);
         if (ret < 0) {
             WLOGERROR("init bus node failed. ret: %d", ret);
-            return -1;
+            return EN_ATAPP_ERR_SETUP_ATBUS;
         }
 
         // setup all callbacks
@@ -926,7 +1079,10 @@ namespace atapp {
                         break;
                     }
 
-                    uv_run(connection_node->get_evloop(), UV_RUN_ONCE);
+                    {
+                        flag_guard_t in_callback_guard(*this, flag_t::IN_CALLBACK);
+                        uv_run(connection_node->get_evloop(), UV_RUN_ONCE);
+                    }
                 }
 
                 // if connected, do not trigger timeout
@@ -962,11 +1118,15 @@ namespace atapp {
     }
 
     int app::setup_timer() {
+        set_flag(flag_t::RESET_TIMER, false);
+
         close_timer(tick_timer_.tick_timer);
 
-        if (conf_.tick_interval < 4) {
-            conf_.tick_interval = 4;
-            WLOGWARNING("tick interval can not smaller than 4ms, we use 4ms now.");
+        if (conf_.tick_interval < 1) {
+            conf_.tick_interval = 1;
+            WLOGWARNING("tick interval can not smaller than 1ms, we use 1ms now.");
+        } else {
+            WLOGINFO("setup tick interval to %llums.", static_cast<unsigned long long>(conf_.tick_interval));
         }
 
         uv_timer_init(bus_node_->get_evloop(), &tick_timer_.tick_timer.timer);
@@ -977,7 +1137,7 @@ namespace atapp {
             tick_timer_.tick_timer.is_activited = true;
         } else {
             WLOGERROR("setup tick timer failed, res: %d", res);
-            return -1;
+            return EN_ATAPP_ERR_SETUP_TIMER;
         }
 
         return 0;
@@ -990,7 +1150,7 @@ namespace atapp {
             if (!pid_file.is_open()) {
                 util::cli::shell_stream ss(std::cerr);
                 ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "open and write pid file " << conf_.pid_file << " failed" << std::endl;
-
+                WLOGERROR("open and write pid file %s failed", conf_.pid_file.c_str());
                 // failed and skip running
                 return false;
             } else {
@@ -1330,14 +1490,17 @@ namespace atapp {
             return evt_on_recv_msg_(std::ref(*this), std::cref(msg), buffer, len);
         }
 
+        ++last_proc_event_count_;
         return 0;
     }
 
     int app::bus_evt_callback_on_send_failed(const atbus::node &, const atbus::endpoint *, const atbus::connection *, const atbus::protocol::msg *m) {
+        ++last_proc_event_count_;
+
         // call failed callback if it's message transfer
         if (NULL == m) {
             WLOGERROR("app 0x%llx receive a send failure without message", static_cast<unsigned long long>(get_id()));
-            return -1;
+            return EN_ATAPP_ERR_SEND_FAILED;
         }
 
         WLOGERROR("app 0x%llx receive a send failure from 0x%llx, message cmd: %d, type: %d, ret: %d, sequence: %llu",
@@ -1399,6 +1562,8 @@ namespace atapp {
     }
 
     int app::bus_evt_callback_on_reg(const atbus::node &n, const atbus::endpoint *ep, const atbus::connection *conn, int res) {
+        ++last_proc_event_count_;
+
         if (NULL != conn) {
             if (NULL != ep) {
                 WLOGINFO("bus node 0x%llx endpoint 0x%llx connection %s registered, res: %d", static_cast<unsigned long long>(n.get_id()),
@@ -1431,6 +1596,8 @@ namespace atapp {
     }
 
     int app::bus_evt_callback_on_invalid_connection(const atbus::node &n, const atbus::connection *conn, int res) {
+        ++last_proc_event_count_;
+
         if (NULL == conn) {
             WLOGERROR("bus node 0x%llx recv a invalid NULL connection , res: %d", static_cast<unsigned long long>(n.get_id()), res);
         } else {
@@ -1445,6 +1612,7 @@ namespace atapp {
 
     int app::bus_evt_callback_on_custom_cmd(const atbus::node &, const atbus::endpoint *, const atbus::connection *, atbus::node::bus_id_t src_id,
                                             const std::vector<std::pair<const void *, size_t> > &args, std::list<std::string> &rsp) {
+        ++last_proc_event_count_;
         if (args.empty()) {
             return 0;
         }
@@ -1465,6 +1633,8 @@ namespace atapp {
     }
 
     int app::bus_evt_callback_on_add_endpoint(const atbus::node &n, atbus::endpoint *ep, int res) {
+        ++last_proc_event_count_;
+
         if (NULL == ep) {
             WLOGERROR("bus node 0x%llx make connection to NULL, res: %d", static_cast<unsigned long long>(n.get_id()), res);
         } else {
@@ -1479,6 +1649,8 @@ namespace atapp {
     }
 
     int app::bus_evt_callback_on_remove_endpoint(const atbus::node &n, atbus::endpoint *ep, int res) {
+        ++last_proc_event_count_;
+
         if (NULL == ep) {
             WLOGERROR("bus node 0x%llx release connection to NULL, res: %d", static_cast<unsigned long long>(n.get_id()), res);
         } else {
@@ -1495,6 +1667,7 @@ namespace atapp {
     static size_t __g_atapp_custom_cmd_rsp_recv_times = 0;
     int app::bus_evt_callback_on_custom_rsp(const atbus::node &, const atbus::endpoint *, const atbus::connection *, atbus::node::bus_id_t src_id,
                                             const std::vector<std::pair<const void *, size_t> > &args, uint64_t seq) {
+        ++last_proc_event_count_;
         ++__g_atapp_custom_cmd_rsp_recv_times;
         if (args.empty()) {
             return 0;
@@ -1535,7 +1708,7 @@ namespace atapp {
 
         if (last_command_.empty()) {
             ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "command is empty." << std::endl;
-            return -1;
+            return EN_ATAPP_ERR_COMMAND_IS_NULL;
         }
 
         // step 1. using the fastest way to connect to server
@@ -1575,7 +1748,7 @@ namespace atapp {
 
         if (0 == use_level) {
             ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "there is no available listener address to send command." << std::endl;
-            return -1;
+            return EN_ATAPP_ERR_NO_AVAILABLE_ADDRESS;
         }
 
         if (!bus_node_) {
@@ -1585,7 +1758,7 @@ namespace atapp {
         // command mode , must no concurrence
         if (!bus_node_) {
             ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "create bus node failed" << std::endl;
-            return -1;
+            return EN_ATAPP_ERR_SETUP_ATBUS;
         }
 
         // no need to connect to parent node
@@ -1645,6 +1818,7 @@ namespace atapp {
 
         // step 4. waiting for connect success
         while (NULL == ep) {
+            flag_guard_t in_callback_guard(*this, flag_t::IN_CALLBACK);
             uv_run(ev_loop, UV_RUN_ONCE);
 
             if (check_flag(flag_t::TIMEOUT)) {
@@ -1656,8 +1830,10 @@ namespace atapp {
         if (NULL == ep) {
             close_timer(tick_timer_.timeout_timer);
             ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "connect to " << use_addr.address << " timeout." << std::endl;
-            return -1;
+            return EN_ATAPP_ERR_CONNECT_ATAPP_FAILED;
         }
+
+        flag_guard_t running_guard(*this, flag_t::RUNNING);
 
         // step 5. send data
         std::vector<const void *> arr_buff;
@@ -1686,6 +1862,7 @@ namespace atapp {
                     break;
                 }
 
+                flag_guard_t in_callback_guard(*this, flag_t::IN_CALLBACK);
                 uv_run(ev_loop, UV_RUN_ONCE);
                 if (check_flag(flag_t::TIMEOUT)) {
                     ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "send command or receive response timeout" << std::endl;

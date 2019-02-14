@@ -23,6 +23,22 @@ namespace atapp {
 
     int module_impl::tick() { return 0; }
 
+    uint64_t module_impl::get_app_id() const {
+        if (NULL == owner_) {
+            return 0;
+        }
+
+        return owner_->get_id();
+    }
+
+    uint64_t module_impl::get_app_type_id() const {
+        if (NULL == owner_) {
+            return 0;
+        }
+
+        return owner_->get_type_id();
+    }
+
     const char *module_impl::name() const {
         const char *ret = typeid(*this).name();
         if (NULL == ret) {

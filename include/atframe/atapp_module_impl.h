@@ -68,6 +68,18 @@ namespace atapp {
          */
         virtual int tick();
 
+        /**
+         * @brief get app id
+         * @return app instance id
+         */
+        uint64_t get_app_id() const;
+
+        /**
+         * @brief get app type id
+         * @return app instance id
+         */
+        uint64_t get_app_type_id() const;
+
     protected:
         /**
          * @brief get owner atapp object
