@@ -53,6 +53,16 @@ if ( "${CMAKE_CURRENT_LIST_DIR}/3rd_party/libatbus/repo" STREQUAL ${3RD_PARTY_LI
     add_subdirectory(${3RD_PARTY_LIBATBUS_PKG_DIR})
 endif()
 
+# mingw
+unset(ATAPP_PACKED_ADDTIONAL_LIBS)
+if (MINGW)
+    EchoWithColor(COLOR GREEN "-- MinGW: custom add lib ws2_32,psapi,userenv,iphlpapi ")
+    list(APPEND ATAPP_PACKED_ADDTIONAL_LIBS ws2_32 psapi userenv iphlpapi)
+elseif (WIN32)
+    EchoWithColor(COLOR GREEN "-- Win32: custom add lib psapi,userenv,iphlpapi ")
+    list(APPEND ATAPP_PACKED_ADDTIONAL_LIBS psapi userenv iphlpapi)
+endif()
+
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/src")
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/binding/c")
 

@@ -633,7 +633,7 @@ namespace atapp {
         }
         {
             uint64_t hash_out[2];
-            ::util::hash::murmur_hash3_x64_128(conf_.name.c_str(), conf_.name.size(), 0x01000193U, hash_out);
+            ::util::hash::murmur_hash3_x64_128(conf_.name.c_str(), static_cast<int>(conf_.name.size()), 0x01000193U, hash_out);
             char hash_code_str[40] = {0};
             UTIL_STRFUNC_SNPRINTF(hash_code_str, sizeof(hash_code_str), "%016llX%016llX", static_cast<unsigned long long>(hash_out[0]),
                                   static_cast<unsigned long long>(hash_out[1]));
@@ -1254,9 +1254,9 @@ namespace atapp {
 #elif defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
             ss << std::setw(key_padding) << "Build Compiler: ";
 #if defined(__clang__)
-            ss << "clang";
+            ss << "clang ";
 #else
-            ss << "gcc";
+            ss << "gcc ";
 #endif
 
 #if defined(__clang_version__)
