@@ -23,6 +23,11 @@ elseif( ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
     add_definitions(-fvisibility=hidden)
 endif()
 
+find_package(Threads)
+if (CMAKE_USE_PTHREADS_INIT)
+    list(APPEND COMPILER_OPTION_EXTERN_CXX_LIBS pthread)
+endif ()
+
 add_library(${PROJECT_BINDING_NAME} SHARED ${BINDING_SRC_LIST} ${PROJECT_3RD_PARTY_SRC_LIST})
 
 target_link_libraries(${PROJECT_BINDING_NAME}
