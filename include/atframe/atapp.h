@@ -13,11 +13,11 @@
 #include <string>
 #include <vector>
 
-#include "libatbus.h"
-
 #include "std/functional.h"
 
 #include <bitset>
+
+#include "uv.h"
 
 #include "cli/cmd_option.h"
 #include "time/time_utility.h"
@@ -26,10 +26,20 @@
 #include "atapp_log_sink_maker.h"
 #include "atapp_module_impl.h"
 
+
+namespace atbus {
+    namespace protocol {
+        struct msg;
+    }
+    class node;
+    class endpoint;
+    class connection;
+} // namespace atbus
+
 namespace atapp {
     class app {
     public:
-        typedef atbus::node::bus_id_t app_id_t;
+        typedef LIBATAPP_MACRO_BUSID_TYPE app_id_t;
         typedef atbus::protocol::msg msg_t;
         typedef std::shared_ptr<module_impl> module_ptr_t;
 
@@ -114,7 +124,7 @@ namespace atapp {
          * @note you can call init(ev_loop, argc, argv, priv_data), and then call run(NULL, 0, NULL).
          * @return 0 or error code
          */
-        int run(atbus::adapter::loop_t *ev_loop, int argc, const char **argv, void *priv_data = NULL);
+        int run(uv_loop_t *ev_loop, int argc, const char **argv, void *priv_data = NULL);
 
         /**
          * @brief initialize atapp
@@ -124,7 +134,7 @@ namespace atapp {
          * @param priv_data private data for custom option callbacks
          * @return 0 or error code
          */
-        int init(atbus::adapter::loop_t *ev_loop, int argc, const char **argv, void *priv_data = NULL);
+        int init(uv_loop_t *ev_loop, int argc, const char **argv, void *priv_data = NULL);
 
         /**
          * @brief run atapp loop but noblock if there is no event
@@ -150,7 +160,7 @@ namespace atapp {
 
         app_id_t get_id() const;
 
-        bool check(flag_t::type f) const;
+        bool check_flag(flag_t::type f) const;
 
         /**
          * @brief add a new module
@@ -185,8 +195,8 @@ namespace atapp {
 
         const std::string &get_hash_code() const;
 
-        atbus::node::ptr_t get_bus_node();
-        const atbus::node::ptr_t get_bus_node() const;
+        std::shared_ptr<atbus::node> get_bus_node();
+        const std::shared_ptr<atbus::node> get_bus_node() const;
 
         bool is_remote_address_available(const std::string &hostname, const std::string &address) const;
 
@@ -211,7 +221,6 @@ namespace atapp {
         static void ev_stop_timeout(uv_timer_t *handle);
 
         bool set_flag(flag_t::type f, bool v);
-        bool check_flag(flag_t::type f) const;
 
         int apply_configure();
 
@@ -233,7 +242,7 @@ namespace atapp {
 
         int setup_timer();
 
-        int send_last_command(atbus::adapter::loop_t *ev_loop);
+        int send_last_command(uv_loop_t *ev_loop);
 
         bool write_pidfile();
         bool cleanup_pidfile();
@@ -271,11 +280,11 @@ namespace atapp {
         int bus_evt_callback_on_shutdown(const atbus::node &, int);
         int bus_evt_callback_on_available(const atbus::node &, int);
         int bus_evt_callback_on_invalid_connection(const atbus::node &, const atbus::connection *, int);
-        int bus_evt_callback_on_custom_cmd(const atbus::node &, const atbus::endpoint *, const atbus::connection *, atbus::node::bus_id_t,
+        int bus_evt_callback_on_custom_cmd(const atbus::node &, const atbus::endpoint *, const atbus::connection *, app_id_t,
                                            const std::vector<std::pair<const void *, size_t> > &, std::list<std::string> &);
         int bus_evt_callback_on_add_endpoint(const atbus::node &, atbus::endpoint *, int);
         int bus_evt_callback_on_remove_endpoint(const atbus::node &, atbus::endpoint *, int);
-        int bus_evt_callback_on_custom_rsp(const atbus::node &, const atbus::endpoint *, const atbus::connection *, atbus::node::bus_id_t,
+        int bus_evt_callback_on_custom_rsp(const atbus::node &, const atbus::endpoint *, const atbus::connection *, app_id_t,
                                            const std::vector<std::pair<const void *, size_t> > &, uint64_t);
 
 
@@ -294,7 +303,7 @@ namespace atapp {
         app_conf conf_;
         mutable std::string build_version_;
 
-        atbus::node::ptr_t bus_node_;
+        std::shared_ptr<atbus::node> bus_node_;
         std::bitset<flag_t::FLAG_MAX> flags_;
         mode_t::type mode_;
         tick_timer_t tick_timer_;

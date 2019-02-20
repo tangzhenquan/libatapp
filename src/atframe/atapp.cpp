@@ -12,6 +12,9 @@
 
 #include "atframe/atapp.h"
 
+#include "libatbus.h"
+#include "libatbus_protocol.h"
+
 #include <algorithm/murmur_hash.h>
 #include <common/file_system.h>
 #include <common/string_oprs.h>
@@ -99,12 +102,12 @@ namespace atapp {
         assert(!tick_timer_.timeout_timer.is_activited);
     }
 
-    int app::run(atbus::adapter::loop_t *ev_loop, int argc, const char **argv, void *priv_data) {
+    int app::run(uv_loop_t *ev_loop, int argc, const char **argv, void *priv_data) {
         if (0 != setup_result_) {
             return setup_result_;
         }
 
-        if (check(flag_t::IN_CALLBACK)) {
+        if (check_flag(flag_t::IN_CALLBACK)) {
             return 0;
         }
 
@@ -131,7 +134,7 @@ namespace atapp {
 
     } // namespace atapp
 
-    int app::init(atbus::adapter::loop_t *ev_loop, int argc, const char **argv, void *priv_data) {
+    int app::init(uv_loop_t *ev_loop, int argc, const char **argv, void *priv_data) {
         if (check_flag(flag_t::INITIALIZED)) {
             return EN_ATAPP_ERR_ALREADY_INITED;
         }
@@ -324,7 +327,7 @@ namespace atapp {
             owent_foreach(std::string & conf_fp, external_confs) {
                 if (!conf_fp.empty()) {
                     if (cfg_loader_.load_file(conf_.conf_file.c_str(), true) < 0) {
-                        if (check(flag_t::RUNNING)) {
+                        if (check_flag(flag_t::RUNNING)) {
                             WLOGERROR("load external configure file %s failed", conf_fp.c_str());
                         } else {
                             ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "load external configure file " << conf_fp << " failed" << std::endl;
@@ -347,7 +350,7 @@ namespace atapp {
             return 0;
         }
 
-        if (check(flag_t::RUNNING)) {
+        if (check_flag(flag_t::RUNNING)) {
             // step 6. reset log
             setup_log();
 
@@ -363,7 +366,7 @@ namespace atapp {
         if (old_conf.tick_interval != conf_.tick_interval) {
             set_flag(flag_t::RESET_TIMER, true);
 
-            if (check(flag_t::RUNNING)) {
+            if (check_flag(flag_t::RUNNING)) {
                 uv_stop(bus_node_->get_evloop());
             }
         }
@@ -379,7 +382,7 @@ namespace atapp {
         set_flag(flag_t::STOPING, true);
 
         // TODO stop reason = manual stop
-        if (bus_node_ && ::atbus::node::state_t::CREATED != bus_node_->get_state() && !bus_node_->check(::atbus::node::flag_t::EN_FT_SHUTDOWN)) {
+        if (bus_node_ && ::atbus::node::state_t::CREATED != bus_node_->get_state() && !bus_node_->check_flag(::atbus::node::flag_t::EN_FT_SHUTDOWN)) {
             bus_node_->shutdown(0);
         }
 
@@ -498,14 +501,6 @@ namespace atapp {
 
     app::app_id_t app::get_id() const { return conf_.id; }
 
-    bool app::check(flag_t::type f) const {
-        if (f < 0 || f >= flag_t::FLAG_MAX) {
-            return false;
-        }
-
-        return flags_.test(f);
-    }
-
     void app::add_module(module_ptr_t module) {
         if (this == module->owner_) {
             return;
@@ -545,8 +540,8 @@ namespace atapp {
 
     const std::string &app::get_hash_code() const { return conf_.hash_code; }
 
-    atbus::node::ptr_t app::get_bus_node() { return bus_node_; }
-    const atbus::node::ptr_t app::get_bus_node() const { return bus_node_; }
+    std::shared_ptr<atbus::node> app::get_bus_node() { return bus_node_; }
+    const std::shared_ptr<atbus::node> app::get_bus_node() const { return bus_node_; }
 
     bool app::is_remote_address_available(const std::string &hostname, const std::string &address) const {
         if (0 == UTIL_STRFUNC_STRNCASE_CMP("mem:", address.c_str(), 4)) {
@@ -835,7 +830,7 @@ namespace atapp {
             log_reg_[log_sink_maker::get_stderr_sink_name()] = log_sink_maker::get_stderr_sink_reg();
         }
 
-        if (false == check(flag_t::RUNNING)) {
+        if (false == check_flag(flag_t::RUNNING)) {
             // if inited, let all modules setup custom logger
             owent_foreach(module_ptr_t & mod, modules_) {
                 if (mod && mod->is_enabled()) {
@@ -969,7 +964,7 @@ namespace atapp {
             bus_node_.reset();
         }
 
-        atbus::node::ptr_t connection_node = atbus::node::create();
+        std::shared_ptr<atbus::node> connection_node = atbus::node::create();
         if (!connection_node) {
             WLOGERROR("create bus node failed.");
             return EN_ATAPP_ERR_SETUP_ATBUS;
@@ -1610,7 +1605,7 @@ namespace atapp {
         return 0;
     }
 
-    int app::bus_evt_callback_on_custom_cmd(const atbus::node &, const atbus::endpoint *, const atbus::connection *, atbus::node::bus_id_t src_id,
+    int app::bus_evt_callback_on_custom_cmd(const atbus::node &, const atbus::endpoint *, const atbus::connection *, app_id_t src_id,
                                             const std::vector<std::pair<const void *, size_t> > &args, std::list<std::string> &rsp) {
         ++last_proc_event_count_;
         if (args.empty()) {
@@ -1665,7 +1660,7 @@ namespace atapp {
     }
 
     static size_t __g_atapp_custom_cmd_rsp_recv_times = 0;
-    int app::bus_evt_callback_on_custom_rsp(const atbus::node &, const atbus::endpoint *, const atbus::connection *, atbus::node::bus_id_t src_id,
+    int app::bus_evt_callback_on_custom_rsp(const atbus::node &, const atbus::endpoint *, const atbus::connection *, app_id_t src_id,
                                             const std::vector<std::pair<const void *, size_t> > &args, uint64_t seq) {
         ++last_proc_event_count_;
         ++__g_atapp_custom_cmd_rsp_recv_times;
@@ -1703,7 +1698,7 @@ namespace atapp {
         cmd_mgr->bind_cmd("@OnError", &app::command_handler_invalid, this);
     }
 
-    int app::send_last_command(atbus::adapter::loop_t *ev_loop) {
+    int app::send_last_command(uv_loop_t *ev_loop) {
         util::cli::shell_stream ss(std::cerr);
 
         if (last_command_.empty()) {

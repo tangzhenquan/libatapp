@@ -13,7 +13,8 @@
 
 #include <atframe/atapp.h>
 
-#include <atframe/libatapp_c.h>
+#include <libatbus.h>
+#include <libatbus_protocol.h>
 
 #define ATAPP_CONTEXT(x) ((::atapp::app *)(x))
 #define ATAPP_CONTEXT_IS_NULL(x) (NULL == (x))
@@ -466,7 +467,7 @@ UTIL_SYMBOL_EXPORT int32_t __cdecl libatapp_c_is_stoping(libatapp_c_context cont
         return 0;
     }
 
-    return ATAPP_CONTEXT(context)->check(atapp::app::flag_t::STOPING);
+    return ATAPP_CONTEXT(context)->check_flag(atapp::app::flag_t::STOPING);
 }
 
 UTIL_SYMBOL_EXPORT int32_t __cdecl libatapp_c_is_timeout(libatapp_c_context context) {
@@ -474,7 +475,7 @@ UTIL_SYMBOL_EXPORT int32_t __cdecl libatapp_c_is_timeout(libatapp_c_context cont
         return 0;
     }
 
-    return ATAPP_CONTEXT(context)->check(atapp::app::flag_t::TIMEOUT);
+    return ATAPP_CONTEXT(context)->check_flag(atapp::app::flag_t::TIMEOUT);
 }
 
 UTIL_SYMBOL_EXPORT int32_t __cdecl libatapp_c_listen(libatapp_c_context context, const char *address) {
@@ -702,7 +703,7 @@ UTIL_SYMBOL_EXPORT void __cdecl libatapp_c_log_write(uint32_t tag, uint32_t leve
         return;
     }
 
-    if (!log_cat->check(static_cast<util::log::log_wrapper::level_t::type>(level))) {
+    if (!log_cat->check_level(static_cast<util::log::log_wrapper::level_t::type>(level))) {
         return;
     }
 
@@ -728,7 +729,7 @@ UTIL_SYMBOL_EXPORT int32_t __cdecl libatapp_c_log_check_level(uint32_t tag, uint
         return 0;
     }
 
-    return log_cat->check(static_cast<util::log::log_wrapper::level_t::type>(level)) ? 1 : 0;
+    return log_cat->check_level(static_cast<util::log::log_wrapper::level_t::type>(level)) ? 1 : 0;
 }
 
 UTIL_SYMBOL_EXPORT void __cdecl libatapp_c_log_set_project_directory(const char *project_dir, uint64_t dirsz) {

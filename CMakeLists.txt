@@ -1,10 +1,11 @@
 ﻿cmake_minimum_required(VERSION 3.7.0)
 cmake_policy(SET CMP0054 NEW)
+cmake_policy(SET CMP0074 NEW)
 
 project(libatapp)
 
 set(LIBATAPP_VERSION_MAJOR "0")
-set(LIBATAPP_VERSION_MINOR "3")
+set(LIBATAPP_VERSION_MINOR "5")
 set(LIBATAPP_VERSION_PATCH "0")
 set(LIBATAPP_VERSION "${LIBATAPP_VERSION_MAJOR}.${LIBATAPP_VERSION_MINOR}.${LIBATAPP_VERSION_PATCH}")
 
@@ -32,13 +33,6 @@ include("${PROJECT_CMAKE_MODULE_DIR}/CompilerOption.cmake")
 include("${PROJECT_CMAKE_MODULE_DIR}/TargetOption.cmake")
 EchoWithColor(COLOR GREEN "-- Build Type: ${CMAKE_BUILD_TYPE}")
 
-
-configure_file(
-    "${CMAKE_CURRENT_LIST_DIR}/include/atframe/atapp_version.h.in"
-    "${CMAKE_CURRENT_LIST_DIR}/include/atframe/atapp_version.h"
-    @ONLY
-)
-
 ########################################################################
 # 导入项目配置
 ## 导入所有 macro 定义
@@ -52,6 +46,13 @@ endif()
 if ( "${CMAKE_CURRENT_LIST_DIR}/3rd_party/libatbus/repo" STREQUAL ${3RD_PARTY_LIBATBUS_PKG_DIR})
     add_subdirectory(${3RD_PARTY_LIBATBUS_PKG_DIR})
 endif()
+
+set (LIBATAPP_MACRO_BUSID_TYPE ${ATBUS_MACRO_BUSID_TYPE})
+configure_file(
+    "${CMAKE_CURRENT_LIST_DIR}/include/atframe/atapp_version.h.in"
+    "${CMAKE_CURRENT_LIST_DIR}/include/atframe/atapp_version.h"
+    @ONLY
+)
 
 # mingw
 unset(ATAPP_PACKED_ADDTIONAL_LIBS)
