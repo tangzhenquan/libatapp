@@ -8,7 +8,7 @@
 
 namespace atapp {
     namespace detail {
-        static util::log::log_wrapper::log_handler_t _log_sink_file(const std::string &sink_name, util::log::log_wrapper &logger, uint32_t index,
+        static util::log::log_wrapper::log_handler_t _log_sink_file(const std::string & /*sink_name*/, util::log::log_wrapper & /*logger*/, uint32_t /*index*/,
                                                                     util::config::ini_value &ini_cfg) {
             std::string file_pattern = ini_cfg["file"].as_cpp_string();
             if (file_pattern.empty()) {
@@ -49,23 +49,23 @@ namespace atapp {
             return file_sink;
         }
 
-        static void _log_sink_stdout_handle(const util::log::log_wrapper::caller_info_t &caller, const char *content, size_t content_size) {
+        static void _log_sink_stdout_handle(const util::log::log_wrapper::caller_info_t &, const char *content, size_t content_size) {
             std::cout.write(content, content_size);
             std::cout << std::endl;
         }
 
-        static util::log::log_wrapper::log_handler_t _log_sink_stdout(const std::string &sink_name, util::log::log_wrapper &logger, uint32_t index,
-                                                                      util::config::ini_value &ini_cfg) {
+        static util::log::log_wrapper::log_handler_t _log_sink_stdout(const std::string & /*sink_name*/, util::log::log_wrapper & /*logger*/,
+                                                                      uint32_t /*index*/, util::config::ini_value & /*ini_cfg*/) {
             return _log_sink_stdout_handle;
         }
 
-        static void _log_sink_stderr_handle(const util::log::log_wrapper::caller_info_t &caller, const char *content, size_t content_size) {
+        static void _log_sink_stderr_handle(const util::log::log_wrapper::caller_info_t & /*caller*/, const char *content, size_t /*content_size*/) {
             util::cli::shell_stream ss(std::cerr);
             ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << content << std::endl;
         }
 
-        static util::log::log_wrapper::log_handler_t _log_sink_stderr(const std::string &sink_name, util::log::log_wrapper &logger, uint32_t index,
-                                                                      util::config::ini_value &ini_cfg) {
+        static util::log::log_wrapper::log_handler_t _log_sink_stderr(const std::string & /*sink_name*/, util::log::log_wrapper & /*logger*/,
+                                                                      uint32_t /*index*/, util::config::ini_value & /*ini_cfg*/) {
             return _log_sink_stderr_handle;
         }
     } // namespace detail

@@ -228,7 +228,7 @@ namespace atapp {
         }
         // cleanup all inited modules if failed
         if (mod_init_res < 0) {
-            for (; inited_mod_idx >= 0 && inited_mod_idx < modules_.size(); --inited_mod_idx) {
+            for (; inited_mod_idx < modules_.size(); --inited_mod_idx) {
                 if (modules_[inited_mod_idx]) {
                     modules_[inited_mod_idx]->cleanup();
                 }
@@ -543,7 +543,7 @@ namespace atapp {
     std::shared_ptr<atbus::node> app::get_bus_node() { return bus_node_; }
     const std::shared_ptr<atbus::node> app::get_bus_node() const { return bus_node_; }
 
-    bool app::is_remote_address_available(const std::string &hostname, const std::string &address) const {
+    bool app::is_remote_address_available(const std::string & /*hostname*/, const std::string &address) const {
         if (0 == UTIL_STRFUNC_STRNCASE_CMP("mem:", address.c_str(), 4)) {
             return false;
         }
@@ -789,7 +789,7 @@ namespace atapp {
     }
 
     // graceful Exits
-    void app::_app_setup_signal_term(int signo) {
+    void app::_app_setup_signal_term(int /*signo*/) {
         if (NULL != app::last_instance_) {
             app::last_instance_->stop();
         }
@@ -1298,7 +1298,7 @@ namespace atapp {
         return true;
     }
 
-    int app::prog_option_handler_help(util::cli::callback_param params, util::cli::cmd_option *opt_mgr, util::cli::cmd_option_ci *cmd_mgr) {
+    int app::prog_option_handler_help(util::cli::callback_param /*params*/, util::cli::cmd_option *opt_mgr, util::cli::cmd_option_ci *cmd_mgr) {
         assert(opt_mgr);
         mode_ = mode_t::INFO;
         util::cli::shell_stream shls(std::cout);
@@ -1313,7 +1313,7 @@ namespace atapp {
         return 0;
     }
 
-    int app::prog_option_handler_version(util::cli::callback_param params) {
+    int app::prog_option_handler_version(util::cli::callback_param /*params*/) {
         mode_ = mode_t::INFO;
         printf("%s", get_build_version().c_str());
         return 0;
@@ -1352,24 +1352,24 @@ namespace atapp {
         return 0;
     }
 
-    int app::prog_option_handler_resume_mode(util::cli::callback_param params) {
+    int app::prog_option_handler_resume_mode(util::cli::callback_param /*params*/) {
         conf_.resume_mode = true;
         return 0;
     }
 
-    int app::prog_option_handler_start(util::cli::callback_param params) {
+    int app::prog_option_handler_start(util::cli::callback_param /*params*/) {
         mode_ = mode_t::START;
         return 0;
     }
 
-    int app::prog_option_handler_stop(util::cli::callback_param params) {
+    int app::prog_option_handler_stop(util::cli::callback_param /*params*/) {
         mode_ = mode_t::STOP;
         last_command_.clear();
         last_command_.push_back("stop");
         return 0;
     }
 
-    int app::prog_option_handler_reload(util::cli::callback_param params) {
+    int app::prog_option_handler_reload(util::cli::callback_param /*params*/) {
         mode_ = mode_t::RELOAD;
         last_command_.clear();
         last_command_.push_back("reload");
@@ -1448,7 +1448,7 @@ namespace atapp {
         opt_mgr->start(argc - 1, &argv[1], false, priv_data);
     }
 
-    int app::app::command_handler_start(util::cli::callback_param params) {
+    int app::app::command_handler_start(util::cli::callback_param /*params*/) {
         // add_custom_command_rsp(params, "success");
         // do nothing
         return 0;
@@ -1605,7 +1605,7 @@ namespace atapp {
         return 0;
     }
 
-    int app::bus_evt_callback_on_custom_cmd(const atbus::node &, const atbus::endpoint *, const atbus::connection *, app_id_t src_id,
+    int app::bus_evt_callback_on_custom_cmd(const atbus::node &, const atbus::endpoint *, const atbus::connection *, app_id_t /*src_id*/,
                                             const std::vector<std::pair<const void *, size_t> > &args, std::list<std::string> &rsp) {
         ++last_proc_event_count_;
         if (args.empty()) {
@@ -1661,7 +1661,7 @@ namespace atapp {
 
     static size_t __g_atapp_custom_cmd_rsp_recv_times = 0;
     int app::bus_evt_callback_on_custom_rsp(const atbus::node &, const atbus::endpoint *, const atbus::connection *, app_id_t src_id,
-                                            const std::vector<std::pair<const void *, size_t> > &args, uint64_t seq) {
+                                            const std::vector<std::pair<const void *, size_t> > &args, uint64_t /*seq*/) {
         ++last_proc_event_count_;
         ++__g_atapp_custom_cmd_rsp_recv_times;
         if (args.empty()) {

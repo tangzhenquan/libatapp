@@ -49,6 +49,14 @@ if ( "${CMAKE_CURRENT_LIST_DIR}/3rd_party/libatbus/repo" STREQUAL ${3RD_PARTY_LI
     add_subdirectory(${3RD_PARTY_LIBATBUS_PKG_DIR})
 endif()
 
+if (COMPILER_STRICT_EXTRA_CFLAGS)
+    add_definitions(${COMPILER_STRICT_EXTRA_CFLAGS})
+endif ()
+
+if (COMPILER_STRICT_CFLAGS)
+    add_definitions(${COMPILER_STRICT_CFLAGS})
+endif ()
+
 set (LIBATAPP_MACRO_BUSID_TYPE ${ATBUS_MACRO_BUSID_TYPE})
 configure_file(
     "${CMAKE_CURRENT_LIST_DIR}/include/atframe/atapp_version.h.in"

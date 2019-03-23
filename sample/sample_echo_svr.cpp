@@ -133,17 +133,17 @@ static int app_handle_on_msg(atapp::app &app, const atapp::app::msg_t &msg, cons
     return 0;
 }
 
-static int app_handle_on_send_fail(atapp::app &app, atapp::app::app_id_t src_pd, atapp::app::app_id_t dst_pd, const atbus::protocol::msg &m) {
+static int app_handle_on_send_fail(atapp::app &, atapp::app::app_id_t src_pd, atapp::app::app_id_t dst_pd, const atbus::protocol::msg &) {
     WLOGERROR("send data from 0x%llx to 0x%llx failed", static_cast<unsigned long long>(src_pd), static_cast<unsigned long long>(dst_pd));
     return 0;
 }
 
-static int app_handle_on_connected(atapp::app &app, atbus::endpoint &ep, int status) {
+static int app_handle_on_connected(atapp::app &, atbus::endpoint &ep, int status) {
     WLOGINFO("app 0x%llx connected, status: %d", static_cast<unsigned long long>(ep.get_id()), status);
     return 0;
 }
 
-static int app_handle_on_disconnected(atapp::app &app, atbus::endpoint &ep, int status) {
+static int app_handle_on_disconnected(atapp::app &, atbus::endpoint &ep, int status) {
     WLOGINFO("app 0x%llx disconnected, status: %d", static_cast<unsigned long long>(ep.get_id()), status);
     return 0;
 }
