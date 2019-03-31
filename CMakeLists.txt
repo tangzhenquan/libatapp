@@ -41,11 +41,15 @@ EchoWithColor(COLOR GREEN "-- Build Type: ${CMAKE_BUILD_TYPE}")
 include_macro_recurse("${CMAKE_CURRENT_LIST_DIR}")
 
 ## 导入工程项目
-if ( "${CMAKE_CURRENT_LIST_DIR}/3rd_party/atframe_utils/repo" STREQUAL ${3RD_PARTY_ATFRAME_UTILS_PKG_DIR})
+if(TARGET ${3RD_PARTY_ATFRAME_UTILS_LINK_NAME})
+    message(STATUS "${3RD_PARTY_ATFRAME_UTILS_LINK_NAME} already exist, use it directly.")
+else()
     add_subdirectory(${3RD_PARTY_ATFRAME_UTILS_PKG_DIR})
 endif()
 
-if ( "${CMAKE_CURRENT_LIST_DIR}/3rd_party/libatbus/repo" STREQUAL ${3RD_PARTY_LIBATBUS_PKG_DIR})
+if(TARGET ${3RD_PARTY_LIBATBUS_LINK_NAME})
+    message(STATUS "${3RD_PARTY_LIBATBUS_LINK_NAME} already exist, use it directly.")
+else()
     add_subdirectory(${3RD_PARTY_LIBATBUS_PKG_DIR})
 endif()
 
