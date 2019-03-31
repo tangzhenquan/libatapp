@@ -86,6 +86,10 @@ endif()
 #     add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/test")
 # endif()
 
+if (PROJECT_ENABLE_TOOLS)
+    add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/tools")
+endif()
+
 ## 生成文档和导入配置
 
 # Install configuration
