@@ -1195,9 +1195,11 @@ namespace atapp {
                << " <options> <command> [command paraters...]" << std::endl;
         shls() << get_option_manager()->get_help_msg() << std::endl << std::endl;
 
-        shls() << util::cli::shell_font_style::SHELL_FONT_COLOR_YELLOW << util::cli::shell_font_style::SHELL_FONT_SPEC_BOLD
-               << "Custom command help:" << std::endl;
-        shls() << get_command_manager()->get_help_msg() << std::endl;
+        if (!(get_command_manager()->empty() && get_command_manager()->children_empty())) {
+            shls() << util::cli::shell_font_style::SHELL_FONT_COLOR_YELLOW << util::cli::shell_font_style::SHELL_FONT_SPEC_BOLD
+                   << "Custom command help:" << std::endl;
+            shls() << get_command_manager()->get_help_msg() << std::endl;
+        }
     }
 
     const std::string &app::get_build_version() const {
