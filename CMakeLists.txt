@@ -77,11 +77,11 @@ configure_file(
 # mingw
 unset(ATAPP_PACKED_ADDTIONAL_LIBS)
 if (MINGW)
-    EchoWithColor(COLOR GREEN "-- MinGW: custom add lib ws2_32,psapi,userenv,iphlpapi ")
-    list(APPEND ATAPP_PACKED_ADDTIONAL_LIBS ws2_32 psapi userenv iphlpapi)
+    EchoWithColor(COLOR GREEN "-- MinGW: custom add lib advapi32 iphlpapi psapi shell32 user32 userenv ws2_32.")
+    list(APPEND ATAPP_PACKED_ADDTIONAL_LIBS advapi32 iphlpapi psapi shell32 user32 userenv ws2_32)
 elseif (WIN32)
-    EchoWithColor(COLOR GREEN "-- Win32: custom add lib psapi,userenv,iphlpapi ")
-    list(APPEND ATAPP_PACKED_ADDTIONAL_LIBS psapi userenv iphlpapi)
+    EchoWithColor(COLOR GREEN "-- Win32: custom add lib advapi32 iphlpapi psapi shell32 user32 userenv ws2_32")
+    list(APPEND ATAPP_PACKED_ADDTIONAL_LIBS advapi32 iphlpapi psapi shell32 user32 userenv ws2_32)
 endif()
 
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/src")
