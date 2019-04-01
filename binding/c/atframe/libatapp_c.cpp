@@ -556,7 +556,7 @@ UTIL_SYMBOL_EXPORT uint32_t __cdecl libatapp_c_msg_get_sequence(libatapp_c_messa
         return 0;
     }
 
-    return ATAPP_MESSAGE(msg)->head.sequence;
+    return static_cast<uint32_t>(ATAPP_MESSAGE(msg)->head.sequence);
 }
 
 UTIL_SYMBOL_EXPORT uint64_t __cdecl libatapp_c_msg_get_src_bus_id(libatapp_c_message msg) {
