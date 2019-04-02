@@ -40,6 +40,16 @@ EchoWithColor(COLOR GREEN "-- Build Type: ${CMAKE_BUILD_TYPE}")
 ## 导入所有 macro 定义
 include_macro_recurse("${CMAKE_CURRENT_LIST_DIR}")
 
+# ================ multi thread ================
+find_package(Threads)
+if (CMAKE_USE_PTHREADS_INIT)
+    add_definitions(-D_POSIX_MT_)
+    list(APPEND COMPILER_OPTION_EXTERN_CXX_LIBS pthread)
+    if (THREADS_PREFER_PTHREAD_FLAG)
+        add_definitions(${THREADS_PREFER_PTHREAD_FLAG})
+    endif ()
+endif ()
+
 ## 导入工程项目
 if(TARGET ${3RD_PARTY_ATFRAME_UTILS_LINK_NAME})
     message(STATUS "${3RD_PARTY_ATFRAME_UTILS_LINK_NAME} already exist, use it directly.")

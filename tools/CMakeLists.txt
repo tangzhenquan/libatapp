@@ -5,13 +5,6 @@ EchoWithColor(COLOR GREEN "-- Configure Tools ${CMAKE_CURRENT_LIST_DIR}")
 # ============ TOOLS - [...] ============
 include_directories(${CMAKE_CURRENT_LIST_DIR})
 
-# ================ multi thread ================
-find_package(Threads)
-if (CMAKE_USE_PTHREADS_INIT)
-    add_definitions(-D_POSIX_MT_)
-    list(APPEND COMPILER_OPTION_EXTERN_CXX_LIBS pthread)
-endif ()
-
 file(GLOB TOOLS_SRC_LIST
     ${CMAKE_CURRENT_LIST_DIR}/*.cpp
     ${CMAKE_CURRENT_LIST_DIR}/*.cc
