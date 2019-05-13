@@ -11,10 +11,6 @@ file(GLOB BINDING_SRC_LIST RELATIVE "${CMAKE_CURRENT_LIST_DIR}"
 )
 include_directories(${CMAKE_CURRENT_LIST_DIR})
 
-if ( NOT MSVC AND NOT APPLE )
-    add_definitions(-shared)
-endif()
-
 # ============ libatbus - src ============
 # 保持和MSVC得导出行为一致
 if( ${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
