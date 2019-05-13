@@ -46,6 +46,10 @@ namespace atapp {
                 file_sink.set_flush_interval(flush_interval.sec);
             }
 
+            if (ini_cfg.get_children().end() != ini_cfg.get_children().find("writing_alias")) {
+                file_sink.set_writing_alias_pattern(ini_cfg["writing_alias"].as_cpp_string());
+            }
+
             return file_sink;
         }
 
