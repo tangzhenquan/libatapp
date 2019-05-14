@@ -38,7 +38,8 @@ EchoWithColor(COLOR GREEN "-- Build Type: ${CMAKE_BUILD_TYPE}")
 ########################################################################
 # 导入项目配置
 ## 导入所有 macro 定义
-include_macro_recurse("${CMAKE_CURRENT_LIST_DIR}")
+include("${CMAKE_CURRENT_LIST_DIR}/3rd_party/3rd_party.macro.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/include/include.macro.cmake")
 
 # ================ multi thread ================
 find_package(Threads)

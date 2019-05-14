@@ -1,4 +1,7 @@
-﻿
+﻿if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.10")
+    include_guard(GLOBAL)
+endif()
+
 # =========== libatbus ==================
 if (NOT 3RD_PARTY_LIBATBUS_BASE_DIR)
     set (3RD_PARTY_LIBATBUS_BASE_DIR ${CMAKE_CURRENT_LIST_DIR})
