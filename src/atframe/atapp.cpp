@@ -246,8 +246,6 @@ namespace atapp {
             evt_on_all_module_inited_(*this);
         }
 
-        flag_guard_t running_guard(*this, flag_t::RUNNING);
-
         // step 9. write pid file
         if (false == write_pidfile()) {
             return EN_ATAPP_ERR_WRITE_PID_FILE;
@@ -327,7 +325,7 @@ namespace atapp {
             owent_foreach(std::string & conf_fp, external_confs) {
                 if (!conf_fp.empty()) {
                     if (cfg_loader_.load_file(conf_.conf_file.c_str(), true) < 0) {
-                        if (check_flag(flag_t::RUNNING)) {
+                        if (is_running()) {
                             WLOGERROR("load external configure file %s failed", conf_fp.c_str());
                         } else {
                             ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "load external configure file " << conf_fp << " failed" << std::endl;
@@ -350,7 +348,7 @@ namespace atapp {
             return 0;
         }
 
-        if (check_flag(flag_t::RUNNING)) {
+        if (is_running()) {
             // step 6. reset log
             setup_log();
 
@@ -366,7 +364,7 @@ namespace atapp {
         if (old_conf.tick_interval != conf_.tick_interval) {
             set_flag(flag_t::RESET_TIMER, true);
 
-            if (check_flag(flag_t::RUNNING)) {
+            if (is_running()) {
                 uv_stop(bus_node_->get_evloop());
             }
         }
@@ -830,7 +828,7 @@ namespace atapp {
             log_reg_[log_sink_maker::get_stderr_sink_name()] = log_sink_maker::get_stderr_sink_reg();
         }
 
-        if (false == check_flag(flag_t::RUNNING)) {
+        if (false == is_running()) {
             // if inited, let all modules setup custom logger
             owent_foreach(module_ptr_t & mod, modules_) {
                 if (mod && mod->is_enabled()) {
