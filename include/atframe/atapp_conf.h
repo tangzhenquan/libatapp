@@ -23,6 +23,7 @@ namespace atapp {
         std::string pid_file;
         const char *execute_path;
         bool resume_mode;
+        bool remove_pidfile_after_exit;
 
         std::vector<std::string> bus_listen;
         atbus::node::conf_t bus_conf;

@@ -65,7 +65,10 @@ namespace atapp {
     app::app() : setup_result_(0), last_proc_event_count_(0), mode_(mode_t::CUSTOM) {
         last_instance_ = this;
         conf_.id = 0;
+        conf_.type_id = 0;
         conf_.execute_path = NULL;
+        conf_.resume_mode = false;
+        conf_.remove_pidfile_after_exit = true;
         conf_.stop_timeout = 30000; // 30s
         conf_.tick_interval = 32;   // 32ms
 
@@ -634,7 +637,8 @@ namespace atapp {
                                   static_cast<unsigned long long>(hash_out[1]));
             conf_.hash_code = &hash_code_str[0];
         }
-
+        
+        cfg_loader_.dump_to("atapp.remove_pidfile_after_exit", conf_.remove_pidfile_after_exit);
 
         // hostname
         {
@@ -1158,7 +1162,7 @@ namespace atapp {
     }
 
     bool app::cleanup_pidfile() {
-        if (!conf_.pid_file.empty()) {
+        if (conf_.remove_pidfile_after_exit && !conf_.pid_file.empty()) {
             std::fstream pid_file;
 
             pid_file.open(conf_.pid_file.c_str(), std::ios::in);
