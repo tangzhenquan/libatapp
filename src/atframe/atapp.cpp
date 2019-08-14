@@ -502,6 +502,10 @@ namespace atapp {
 
     app::app_id_t app::get_id() const { return conf_.id; }
 
+    app::app_id_t app::convert_app_id_by_string(const char* id_in) const {
+        return convert_app_id_by_string(id_in, conf_.id_mask);
+    }
+
     void app::add_module(module_ptr_t module) {
         if (this == module->owner_) {
             return;
@@ -614,9 +618,21 @@ namespace atapp {
     }
 
     int app::apply_configure() {
-        // id
+        // id and id mask
+        if (conf_.id_mask.empty()) {
+            std::string id_mask_str;
+            cfg_loader_.dump_to("atapp.id_mask", id_mask_str);
+            split_ids_by_string(id_mask_str.c_str(), conf_.id_mask);
+        }
+
+        if (!conf_.id_cmd.empty()) {
+            conf_.id = convert_app_id_by_string(conf_.id_cmd.c_str());
+        }
+
         if (0 == conf_.id) {
-            cfg_loader_.dump_to("atapp.id", conf_.id);
+            std::string id_cfg;
+            cfg_loader_.dump_to("atapp.id", id_cfg);
+            conf_.id = convert_app_id_by_string(id_cfg.c_str());
         }
 
         cfg_loader_.dump_to("atapp.name", conf_.name, true);
@@ -1302,6 +1318,69 @@ namespace atapp {
         return true;
     }
 
+    void app::split_ids_by_string(const char* in, std::vector<app_id_t>& out) {
+        if (NULL == in) {
+            return;
+        }
+
+        out.reserve(8);
+
+        while(NULL != in && *in) {
+            // skip spaces
+            if (' ' == *in || '\t' == *in || '\r' == *in || '\n' == *in) {
+                ++ in;
+                continue;
+            }
+
+            out.push_back(::util::string::to_int<app_id_t>(in));
+
+            for(;NULL != in && *in && '.' != *in; ++in);
+            // skip dot and ready to next segment
+            if (NULL != in && *in && '.' == *in) {
+                ++ in;
+            }
+        }
+    }
+
+    app::app_id_t app::convert_app_id_by_string(const char* id_in, const std::vector<app_id_t>& mask_in) {
+        if (NULL == id_in || 0 == *id_in) {
+            return 0;
+        }
+
+        bool id_in_is_number = true;
+        if (!mask_in.empty()) {
+            for(; *id_in && id_in_is_number; ++ id_in) {
+                if ('.' == *id_in) {
+                    id_in_is_number = false;
+                }
+            }
+        }
+
+        if (id_in_is_number) {
+            return ::util::string::to_int<app_id_t>(id_in);
+        }
+
+        std::vector<app_id_t> ids;
+        split_ids_by_string(id_in, ids);
+        app_id_t ret = 0;
+        for (size_t i = 0; i < ids.size() && i < mask_in.size(); ++ i) {
+            ret <<= mask_in[i];
+            ret |= (ids[i] & ((static_cast<app_id_t>(1)<< mask_in[i]) - 1));
+        }
+
+        return ret;
+    }
+
+    app::app_id_t app::convert_app_id_by_string(const char* id_in, const char* mask_in) {
+        if (NULL == id_in || 0 == *id_in) {
+            return 0;
+        }
+
+        std::vector<app_id_t> mask;
+        split_ids_by_string(mask_in, mask);
+        return convert_app_id_by_string(id_in, mask);
+    }
+
     int app::prog_option_handler_help(util::cli::callback_param /*params*/, util::cli::cmd_option *opt_mgr, util::cli::cmd_option_ci *cmd_mgr) {
         assert(opt_mgr);
         mode_ = mode_t::INFO;
@@ -1325,10 +1404,22 @@ namespace atapp {
 
     int app::prog_option_handler_set_id(util::cli::callback_param params) {
         if (params.get_params_number() > 0) {
-            util::string::str2int(conf_.id, params[0]->to_string());
+            conf_.id_cmd = params[0]->to_string();
         } else {
             util::cli::shell_stream ss(std::cerr);
             ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "-id require 1 parameter" << std::endl;
+        }
+
+        return 0;
+    }
+
+    int app::prog_option_handler_set_id_mask(util::cli::callback_param params) {
+        if (params.get_params_number() > 0) {
+            conf_.id_mask.clear();
+            split_ids_by_string(params[0]->to_string(), conf_.id_mask);
+        } else {
+            util::cli::shell_stream ss(std::cerr);
+            ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "-id-mask require 1 parameter" << std::endl;
         }
 
         return 0;
@@ -1409,6 +1500,8 @@ namespace atapp {
 
         // set app bus id
         opt_mgr->bind_cmd("-id", &app::prog_option_handler_set_id, this)->set_help_msg("-id <bus id>                           set app bus id.");
+        // set app bus id
+        opt_mgr->bind_cmd("-id-mask", &app::prog_option_handler_set_id_mask, this)->set_help_msg("-id-mask <bit number of bus id mask>   set app bus id mask(example: 8.8.8.8, and then -id 1.2.3.4 is just like -id 0x01020304).");
 
         // set configure file path
         opt_mgr->bind_cmd("-c, --conf, --config", &app::prog_option_handler_set_conf_file, this)

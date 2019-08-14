@@ -18,7 +18,9 @@
 namespace atapp {
     struct app_conf {
         // bus configure
+        std::string id_cmd;
         atbus::node::bus_id_t id;
+        std::vector<atbus::node::bus_id_t> id_mask; // convert a.b.c.d -> id
         std::string conf_file;
         std::string pid_file;
         const char *execute_path;

@@ -160,6 +160,8 @@ namespace atapp {
 
         app_id_t get_id() const;
 
+        app_id_t convert_app_id_by_string(const char* id_in) const;
+
         bool check_flag(flag_t::type f) const;
 
         /**
@@ -254,11 +256,15 @@ namespace atapp {
     public:
         static custom_command_sender_t get_custom_command_sender(util::cli::callback_param);
         static bool add_custom_command_rsp(util::cli::callback_param, const std::string &rsp_text);
+        static void split_ids_by_string(const char* in, std::vector<app_id_t>& out);
+        static app_id_t convert_app_id_by_string(const char* id_in, const std::vector<app_id_t>& mask_in);
+        static app_id_t convert_app_id_by_string(const char* id_in, const char* mask_in);
 
     private:
         int prog_option_handler_help(util::cli::callback_param params, util::cli::cmd_option *opt_mgr, util::cli::cmd_option_ci *cmd_mgr);
         int prog_option_handler_version(util::cli::callback_param params);
         int prog_option_handler_set_id(util::cli::callback_param params);
+        int prog_option_handler_set_id_mask(util::cli::callback_param params);
         int prog_option_handler_set_conf_file(util::cli::callback_param params);
         int prog_option_handler_set_pid(util::cli::callback_param params);
         int prog_option_handler_resume_mode(util::cli::callback_param params);
