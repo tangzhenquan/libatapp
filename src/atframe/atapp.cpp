@@ -1349,8 +1349,8 @@ namespace atapp {
 
         bool id_in_is_number = true;
         if (!mask_in.empty()) {
-            for(; *id_in && id_in_is_number; ++ id_in) {
-                if ('.' == *id_in) {
+            for(const char* check_char = id_in; *check_char && id_in_is_number; ++ check_char) {
+                if ('.' == *check_char) {
                     id_in_is_number = false;
                 }
             }
