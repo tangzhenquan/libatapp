@@ -189,6 +189,10 @@ namespace atapp {
 
         const std::string &get_app_version() const;
 
+        void set_build_version(const std::string &ver);
+
+        const std::string &get_build_version() const;
+
         const std::string &get_app_name() const;
 
         const std::string &get_type_name() const;
@@ -250,7 +254,6 @@ namespace atapp {
         bool cleanup_pidfile();
         void print_help();
 
-        const std::string &get_build_version() const;
         // ============ inner functional handlers ============
 
     public:

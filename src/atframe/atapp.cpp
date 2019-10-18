@@ -502,9 +502,7 @@ namespace atapp {
 
     app::app_id_t app::get_id() const { return conf_.id; }
 
-    app::app_id_t app::convert_app_id_by_string(const char* id_in) const {
-        return convert_app_id_by_string(id_in, conf_.id_mask);
-    }
+    app::app_id_t app::convert_app_id_by_string(const char *id_in) const { return convert_app_id_by_string(id_in, conf_.id_mask); }
 
     void app::add_module(module_ptr_t module) {
         if (this == module->owner_) {
@@ -651,7 +649,7 @@ namespace atapp {
                                   static_cast<unsigned long long>(hash_out[1]));
             conf_.hash_code = &hash_code_str[0];
         }
-        
+
         cfg_loader_.dump_to("atapp.remove_pidfile_after_exit", conf_.remove_pidfile_after_exit);
 
         // hostname
@@ -1220,6 +1218,8 @@ namespace atapp {
         }
     }
 
+    void app::set_build_version(const std::string &ver) { build_version_ = ver; }
+
     const std::string &app::get_build_version() const {
         if (build_version_.empty()) {
             std::stringstream ss;
@@ -1318,38 +1318,39 @@ namespace atapp {
         return true;
     }
 
-    void app::split_ids_by_string(const char* in, std::vector<app_id_t>& out) {
+    void app::split_ids_by_string(const char *in, std::vector<app_id_t> &out) {
         if (NULL == in) {
             return;
         }
 
         out.reserve(8);
 
-        while(NULL != in && *in) {
+        while (NULL != in && *in) {
             // skip spaces
             if (' ' == *in || '\t' == *in || '\r' == *in || '\n' == *in) {
-                ++ in;
+                ++in;
                 continue;
             }
 
             out.push_back(::util::string::to_int<app_id_t>(in));
 
-            for(;NULL != in && *in && '.' != *in; ++in);
+            for (; NULL != in && *in && '.' != *in; ++in)
+                ;
             // skip dot and ready to next segment
             if (NULL != in && *in && '.' == *in) {
-                ++ in;
+                ++in;
             }
         }
     }
 
-    app::app_id_t app::convert_app_id_by_string(const char* id_in, const std::vector<app_id_t>& mask_in) {
+    app::app_id_t app::convert_app_id_by_string(const char *id_in, const std::vector<app_id_t> &mask_in) {
         if (NULL == id_in || 0 == *id_in) {
             return 0;
         }
 
         bool id_in_is_number = true;
         if (!mask_in.empty()) {
-            for(const char* check_char = id_in; *check_char && id_in_is_number; ++ check_char) {
+            for (const char *check_char = id_in; *check_char && id_in_is_number; ++check_char) {
                 if ('.' == *check_char) {
                     id_in_is_number = false;
                 }
@@ -1363,15 +1364,15 @@ namespace atapp {
         std::vector<app_id_t> ids;
         split_ids_by_string(id_in, ids);
         app_id_t ret = 0;
-        for (size_t i = 0; i < ids.size() && i < mask_in.size(); ++ i) {
+        for (size_t i = 0; i < ids.size() && i < mask_in.size(); ++i) {
             ret <<= mask_in[i];
-            ret |= (ids[i] & ((static_cast<app_id_t>(1)<< mask_in[i]) - 1));
+            ret |= (ids[i] & ((static_cast<app_id_t>(1) << mask_in[i]) - 1));
         }
 
         return ret;
     }
 
-    app::app_id_t app::convert_app_id_by_string(const char* id_in, const char* mask_in) {
+    app::app_id_t app::convert_app_id_by_string(const char *id_in, const char *mask_in) {
         if (NULL == id_in || 0 == *id_in) {
             return 0;
         }
@@ -1501,7 +1502,8 @@ namespace atapp {
         // set app bus id
         opt_mgr->bind_cmd("-id", &app::prog_option_handler_set_id, this)->set_help_msg("-id <bus id>                           set app bus id.");
         // set app bus id
-        opt_mgr->bind_cmd("-id-mask", &app::prog_option_handler_set_id_mask, this)->set_help_msg("-id-mask <bit number of bus id mask>   set app bus id mask(example: 8.8.8.8, and then -id 1.2.3.4 is just like -id 0x01020304).");
+        opt_mgr->bind_cmd("-id-mask", &app::prog_option_handler_set_id_mask, this)
+            ->set_help_msg("-id-mask <bit number of bus id mask>   set app bus id mask(example: 8.8.8.8, and then -id 1.2.3.4 is just like -id 0x01020304).");
 
         // set configure file path
         opt_mgr->bind_cmd("-c, --conf, --config", &app::prog_option_handler_set_conf_file, this)
