@@ -1157,7 +1157,7 @@ namespace atapp {
     bool app::write_pidfile() {
         if (!conf_.pid_file.empty()) {
             std::fstream pid_file;
-            pid_file.open(conf_.pid_file.c_str(), std::ios::out);
+            pid_file.open(conf_.pid_file.c_str(), std::ios::out | std::ios::trunc);
             if (!pid_file.is_open()) {
                 util::cli::shell_stream ss(std::cerr);
                 ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "open and write pid file " << conf_.pid_file << " failed" << std::endl;
