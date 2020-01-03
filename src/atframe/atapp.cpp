@@ -1,5 +1,6 @@
 ﻿#include <assert.h>
 #include <signal.h>
+#include <stdarg.h>
 
 #include <fstream>
 #include <iomanip>
@@ -815,7 +816,7 @@ namespace atapp {
         // block signals
         app::last_instance_ = this;
         signal(SIGTERM, _app_setup_signal_term);
-        signal(SIGINT, SIG_IGN);
+        signal(SIGINT, _app_setup_signal_term);
 
 #ifndef WIN32
         signal(SIGSTOP, _app_setup_signal_term);
@@ -973,6 +974,17 @@ namespace atapp {
         return 0;
     }
 
+    static void ondebug(const char *file_path, size_t line, const atbus::node &, const atbus::endpoint *, const atbus::connection *, const atbus::protocol::msg *,
+                        const char *fmt, ...){
+        va_list args;
+        va_start (args, fmt);
+        char output[4097] = {0};
+        std::vsnprintf(output, 4096, fmt, args);
+        WLOGINFO("tom debug file_path=%s:%zu %s",file_path, line, output);
+        va_end (args);
+    }
+
+
     int app::setup_atbus() {
         int ret = 0, res = 0;
         if (bus_node_) {
@@ -1020,6 +1032,7 @@ namespace atapp {
         connection_node->set_on_remove_endpoint_handle(
             std::bind(&app::bus_evt_callback_on_remove_endpoint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
+        connection_node->on_debug = ondebug;
 
         // TODO if not in resume mode, destroy shm
         // if (false == conf_.resume_mode) {}
@@ -1067,6 +1080,8 @@ namespace atapp {
             WLOGERROR("bus node start failed, ret: %d", ret);
             return ret;
         }
+
+        //edit by tom
 
         // if has father node, block and connect to father node
         if (atbus::node::state_t::CONNECTING_PARENT == connection_node->get_state() || atbus::node::state_t::LOST_PARENT == connection_node->get_state()) {
