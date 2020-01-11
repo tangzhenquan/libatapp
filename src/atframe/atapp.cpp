@@ -503,7 +503,9 @@ namespace atapp {
 
     app::app_id_t app::get_id() const { return conf_.id; }
 
-    app::app_id_t app::convert_app_id_by_string(const char *id_in) const { return convert_app_id_by_string(id_in, conf_.id_mask); }
+    app::app_id_t app::convert_app_id_by_string(const char* id_in) const {
+        return convert_app_id_by_string(id_in, conf_.id_mask);
+    }
 
     void app::add_module(module_ptr_t module) {
         if (this == module->owner_) {
@@ -512,8 +514,9 @@ namespace atapp {
 
         assert(NULL == module->owner_);
 
-        modules_.push_back(module);
         module->owner_ = this;
+        modules_.push_back(module);
+
     }
 
     util::cli::cmd_option_ci::ptr_type app::get_command_manager() {
@@ -578,7 +581,9 @@ namespace atapp {
     void app::set_evt_on_app_connected(callback_fn_on_connected_t fn) { evt_on_app_connected_ = fn; }
     void app::set_evt_on_app_disconnected(callback_fn_on_disconnected_t fn) { evt_on_app_disconnected_ = fn; }
     void app::set_evt_on_all_module_inited(callback_fn_on_all_module_inited_t fn) { evt_on_all_module_inited_ = fn; }
+    void app::set_evt_on_on_custom_route(app::callback_fn_on_custom_route_t fn) {evt_on_custom_route = fn;}
 
+    const app::callback_fn_on_custom_route_t &app::get_evt_on_on_custom_route() const {return evt_on_custom_route;}
     const app::callback_fn_on_msg_t &app::get_evt_on_recv_msg() const { return evt_on_recv_msg_; }
     const app::callback_fn_on_send_fail_t &app::get_evt_on_send_fail() const { return evt_on_send_fail_; }
     const app::callback_fn_on_connected_t &app::get_evt_on_app_connected() const { return evt_on_app_connected_; }
@@ -650,7 +655,7 @@ namespace atapp {
                                   static_cast<unsigned long long>(hash_out[1]));
             conf_.hash_code = &hash_code_str[0];
         }
-
+        
         cfg_loader_.dump_to("atapp.remove_pidfile_after_exit", conf_.remove_pidfile_after_exit);
 
         // hostname
@@ -1033,6 +1038,8 @@ namespace atapp {
             std::bind(&app::bus_evt_callback_on_remove_endpoint, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
         connection_node->on_debug = ondebug;
+        connection_node->set_on_custom_route_handle(std::bind(&app::bus_evt_callback_on_custom_router, this, std::placeholders::_1, std::placeholders::_2,
+                                                              std::placeholders::_3));
 
         // TODO if not in resume mode, destroy shm
         // if (false == conf_.resume_mode) {}
@@ -1172,7 +1179,7 @@ namespace atapp {
     bool app::write_pidfile() {
         if (!conf_.pid_file.empty()) {
             std::fstream pid_file;
-            pid_file.open(conf_.pid_file.c_str(), std::ios::out | std::ios::trunc);
+            pid_file.open(conf_.pid_file.c_str(), std::ios::out);
             if (!pid_file.is_open()) {
                 util::cli::shell_stream ss(std::cerr);
                 ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "open and write pid file " << conf_.pid_file << " failed" << std::endl;
@@ -1232,8 +1239,6 @@ namespace atapp {
             shls() << get_command_manager()->get_help_msg() << std::endl;
         }
     }
-
-    void app::set_build_version(const std::string &ver) { build_version_ = ver; }
 
     const std::string &app::get_build_version() const {
         if (build_version_.empty()) {
@@ -1333,39 +1338,38 @@ namespace atapp {
         return true;
     }
 
-    void app::split_ids_by_string(const char *in, std::vector<app_id_t> &out) {
+    void app::split_ids_by_string(const char* in, std::vector<app_id_t>& out) {
         if (NULL == in) {
             return;
         }
 
         out.reserve(8);
 
-        while (NULL != in && *in) {
+        while(NULL != in && *in) {
             // skip spaces
             if (' ' == *in || '\t' == *in || '\r' == *in || '\n' == *in) {
-                ++in;
+                ++ in;
                 continue;
             }
 
             out.push_back(::util::string::to_int<app_id_t>(in));
 
-            for (; NULL != in && *in && '.' != *in; ++in)
-                ;
+            for(;NULL != in && *in && '.' != *in; ++in);
             // skip dot and ready to next segment
             if (NULL != in && *in && '.' == *in) {
-                ++in;
+                ++ in;
             }
         }
     }
 
-    app::app_id_t app::convert_app_id_by_string(const char *id_in, const std::vector<app_id_t> &mask_in) {
+    app::app_id_t app::convert_app_id_by_string(const char* id_in, const std::vector<app_id_t>& mask_in) {
         if (NULL == id_in || 0 == *id_in) {
             return 0;
         }
 
         bool id_in_is_number = true;
         if (!mask_in.empty()) {
-            for (const char *check_char = id_in; *check_char && id_in_is_number; ++check_char) {
+            for(const char* check_char = id_in; *check_char && id_in_is_number; ++ check_char) {
                 if ('.' == *check_char) {
                     id_in_is_number = false;
                 }
@@ -1379,15 +1383,15 @@ namespace atapp {
         std::vector<app_id_t> ids;
         split_ids_by_string(id_in, ids);
         app_id_t ret = 0;
-        for (size_t i = 0; i < ids.size() && i < mask_in.size(); ++i) {
+        for (size_t i = 0; i < ids.size() && i < mask_in.size(); ++ i) {
             ret <<= mask_in[i];
-            ret |= (ids[i] & ((static_cast<app_id_t>(1) << mask_in[i]) - 1));
+            ret |= (ids[i] & ((static_cast<app_id_t>(1)<< mask_in[i]) - 1));
         }
 
         return ret;
     }
 
-    app::app_id_t app::convert_app_id_by_string(const char *id_in, const char *mask_in) {
+    app::app_id_t app::convert_app_id_by_string(const char* id_in, const char* mask_in) {
         if (NULL == id_in || 0 == *id_in) {
             return 0;
         }
@@ -1792,6 +1796,16 @@ namespace atapp {
 
         return 0;
     }
+
+    int app::bus_evt_callback_on_custom_router(const atbus::node &, const atbus::protocol::custom_route_data& data, std::vector<uint64_t >& bus_ids) {
+        // call recv callback
+        if (evt_on_custom_route) {
+            return evt_on_custom_route(std::ref(*this), std::cref(data), std::ref(bus_ids));
+        }
+        ++last_proc_event_count_;
+        return 0;
+    }
+
 
     void app::setup_command() {
         util::cli::cmd_option_ci::ptr_type cmd_mgr = get_command_manager();
