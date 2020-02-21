@@ -12,7 +12,6 @@
 #include <map>
 #include <string>
 #include <vector>
-
 #include "std/functional.h"
 
 #include <bitset>
