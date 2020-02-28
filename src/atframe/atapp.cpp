@@ -1039,7 +1039,7 @@ namespace atapp {
 
         connection_node->on_debug = ondebug;
         connection_node->set_on_custom_route_handle(std::bind(&app::bus_evt_callback_on_custom_router, this, std::placeholders::_1, std::placeholders::_2,
-                                                              std::placeholders::_3));
+                                                              std::placeholders::_3, std::placeholders::_4));
 
         // TODO if not in resume mode, destroy shm
         // if (false == conf_.resume_mode) {}
@@ -1797,10 +1797,10 @@ namespace atapp {
         return 0;
     }
 
-    int app::bus_evt_callback_on_custom_router(const atbus::node &, const atbus::protocol::custom_route_data& data, std::vector<uint64_t >& bus_ids) {
+    int app::bus_evt_callback_on_custom_router(const atbus::node &,  app_id_t src_id,  const atbus::protocol::custom_route_data& data, std::vector<uint64_t >& bus_ids) {
         // call recv callback
         if (evt_on_custom_route) {
-            return evt_on_custom_route(std::ref(*this), std::cref(data), std::ref(bus_ids));
+            return evt_on_custom_route(std::ref(*this), src_id, std::cref(data), std::ref(bus_ids));
         }
         ++last_proc_event_count_;
         return 0;

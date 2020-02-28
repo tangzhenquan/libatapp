@@ -109,7 +109,7 @@ namespace atapp {
         typedef std::function<int(app &, atbus::endpoint &, int)> callback_fn_on_connected_t;
         typedef std::function<int(app &, atbus::endpoint &, int)> callback_fn_on_disconnected_t;
         typedef std::function<int(app &)> callback_fn_on_all_module_inited_t;
-        typedef std::function<int(app &, const atbus::protocol::custom_route_data&, std::vector<uint64_t >& )>
+        typedef std::function<int(app &,  app_id_t,  const atbus::protocol::custom_route_data&, std::vector<uint64_t >& )>
                  callback_fn_on_custom_route_t;
 
     public:
@@ -299,7 +299,7 @@ namespace atapp {
         int bus_evt_callback_on_custom_rsp(const atbus::node &, const atbus::endpoint *, const atbus::connection *, app_id_t,
                                            const std::vector<std::pair<const void *, size_t> > &, uint64_t);
 
-        int bus_evt_callback_on_custom_router(const atbus::node &, const atbus::protocol::custom_route_data&, std::vector<uint64_t >&);
+        int bus_evt_callback_on_custom_router(const atbus::node &, app_id_t ,const atbus::protocol::custom_route_data&, std::vector<uint64_t >&);
 
 
         /** this function should always not be used outside atapp.cpp **/
