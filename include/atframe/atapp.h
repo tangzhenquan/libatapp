@@ -198,6 +198,12 @@ namespace atapp {
 
         const std::string &get_type_name() const;
 
+        const std::string &get_region() const;
+
+
+
+
+
         app_id_t get_type_id() const;
 
         const std::string &get_hash_code() const;

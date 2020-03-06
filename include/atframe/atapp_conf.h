@@ -39,6 +39,8 @@ namespace atapp {
         std::string type_name;
         std::string name;
         std::string hash_code;
+        std::string region;
+
     };
 
     typedef enum {

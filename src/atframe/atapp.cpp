@@ -543,6 +543,9 @@ namespace atapp {
 
     const std::string &app::get_type_name() const { return conf_.type_name; }
 
+    const std::string &app::get_region() const { return conf_.region; }
+
+
     app::app_id_t app::get_type_id() const { return conf_.type_id; }
 
     const std::string &app::get_hash_code() const { return conf_.hash_code; }
@@ -642,6 +645,9 @@ namespace atapp {
         cfg_loader_.dump_to("atapp.name", conf_.name, true);
         cfg_loader_.dump_to("atapp.type_id", conf_.type_id);
         cfg_loader_.dump_to("atapp.type_name", conf_.type_name);
+        cfg_loader_.dump_to("atapp.region", conf_.region);
+
+
         if (conf_.name.empty()) {
             std::stringstream ss;
             ss << conf_.type_name << "-0x" << std::ios::hex << conf_.id;
@@ -676,6 +682,7 @@ namespace atapp {
         // conf_.tick_interval = 32; // use last available value
         cfg_loader_.dump_to("atapp.timer.tick_interval", conf_.tick_interval);
 
+
         // atbus configure
         atbus::node::default_conf(&conf_.bus_conf);
 
@@ -698,6 +705,8 @@ namespace atapp {
         cfg_loader_.dump_to("atapp.bus.recv_buffer_size", conf_.bus_conf.recv_buffer_size);
         cfg_loader_.dump_to("atapp.bus.send_buffer_size", conf_.bus_conf.send_buffer_size);
         cfg_loader_.dump_to("atapp.bus.send_buffer_number", conf_.bus_conf.send_buffer_number);
+        conf_.bus_conf.advertise_addrs.clear();
+        cfg_loader_.dump_to("atapp.bus.advertise_addr", conf_.bus_conf.advertise_addrs);
 
         return 0;
     } // namespace atapp
@@ -979,13 +988,12 @@ namespace atapp {
         return 0;
     }
 
-    static void ondebug(const char *file_path, size_t line, const atbus::node &, const atbus::endpoint *, const atbus::connection *, const atbus::protocol::msg *,
+    static void ondebug(const char *, size_t , const atbus::node &, const atbus::endpoint *, const atbus::connection *, const atbus::protocol::msg *,
                         const char *fmt, ...){
         va_list args;
         va_start (args, fmt);
         char output[4097] = {0};
         std::vsnprintf(output, 4096, fmt, args);
-        WLOGINFO("tom debug file_path=%s:%zu %s",file_path, line, output);
         va_end (args);
     }
 
