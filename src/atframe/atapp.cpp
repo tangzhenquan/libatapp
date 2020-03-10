@@ -705,8 +705,10 @@ namespace atapp {
         cfg_loader_.dump_to("atapp.bus.recv_buffer_size", conf_.bus_conf.recv_buffer_size);
         cfg_loader_.dump_to("atapp.bus.send_buffer_size", conf_.bus_conf.send_buffer_size);
         cfg_loader_.dump_to("atapp.bus.send_buffer_number", conf_.bus_conf.send_buffer_number);
+        cfg_loader_.dump_to("atapp.bus.pure_forward", conf_.bus_conf.pure_forward);
         conf_.bus_conf.advertise_addrs.clear();
         cfg_loader_.dump_to("atapp.bus.advertise_addr", conf_.bus_conf.advertise_addrs);
+        conf_.bus_conf.type_name = conf_.type_name;
 
         return 0;
     } // namespace atapp
@@ -1913,7 +1915,7 @@ namespace atapp {
         if (is_sync_channel) {
             // preallocate endpoint when using shared memory channel, because this channel can not be connected without endpoint
             atbus::endpoint::ptr_t new_ep =
-                atbus::endpoint::create(bus_node_.get(), conf_.id, conf_.bus_conf.children_mask, bus_node_->get_pid(), bus_node_->get_hostname());
+                atbus::endpoint::create(bus_node_.get(), conf_.id, conf_.bus_conf.children_mask, bus_node_->get_pid(), bus_node_->get_hostname(), conf_.bus_conf.type_name, conf_.bus_conf.tags);
             ret = bus_node_->add_endpoint(new_ep);
             if (ret < 0) {
                 ss() << util::cli::shell_font_style::SHELL_FONT_COLOR_RED << "connect to " << use_addr.address << " failed. ret: " << ret << std::endl;
