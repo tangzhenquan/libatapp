@@ -990,12 +990,13 @@ namespace atapp {
         return 0;
     }
 
-    static void ondebug(const char *, size_t , const atbus::node &, const atbus::endpoint *, const atbus::connection *, const atbus::protocol::msg *,
+    static void ondebug(const char *file_path, size_t line, const atbus::node &, const atbus::endpoint *, const atbus::connection *, const atbus::protocol::msg *,
                         const char *fmt, ...){
         va_list args;
         va_start (args, fmt);
         char output[4097] = {0};
         std::vsnprintf(output, 4096, fmt, args);
+        WLOGDEBUG("file_path=%s:%zu %s", file_path, line, output);
         va_end (args);
     }
 
