@@ -996,8 +996,10 @@ namespace atapp {
         va_start (args, fmt);
         char output[4097] = {0};
         std::vsnprintf(output, 4096, fmt, args);
-        WLOGDEBUG("file_path=%s:%zu %s", file_path, line, output);
         va_end (args);
+        util::log::log_wrapper::caller_info_t caller = util::log::log_wrapper::caller_info_t(util::log::log_wrapper::level_t::LOG_LW_DEBUG, NULL ,file_path, line, NULL);
+        WDTLOGGETCAT(util::log::log_wrapper::categorize_t::DEFAULT)->log(caller, "%s", output);
+
     }
 
 
